@@ -65,7 +65,9 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .cflag{font-size:4rem;margin-bottom:8px;line-height:1;}
 .cname{font-size:1.5rem;font-weight:700;color:#ffcc77;text-align:center;line-height:1.2;}
 .ccont{font-size:.73rem;color:#3a6a84;margin-top:5px;}
-.chint{font-size:.63rem;color:#2a5060;margin-top:16px;}
+.ccap{font-size:.78rem;color:#8ab8d0;margin-top:5px;}
+.ccap::before{content:"🏛️ ";font-size:.72rem;}
+.chint{font-size:.63rem;color:#2a5060;margin-top:12px;}
 .cbtitle{font-size:1.05rem;font-weight:700;color:#55cc88;margin-bottom:10px;text-align:center;width:100%;}
 .cbrow{font-size:.78rem;margin-bottom:6px;display:flex;gap:8px;width:100%;}
 .cbrow span:first-child{color:#3a6a84;min-width:76px;flex-shrink:0;}
@@ -195,6 +197,7 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
         <div class="cflag" id="cflag">🌍</div>
         <div class="cname" id="cname">Выбери фильтр</div>
         <div class="ccont" id="ccont"></div>
+        <div class="ccap" id="ccap"></div>
         <div class="chint">Тап — перевернуть</div>
       </div>
       <div class="cface cback">
@@ -768,6 +771,7 @@ function renderCard(){
   document.getElementById("cflag").innerHTML=flagImg(c.n,68);
   document.getElementById("cname").textContent=c.n;
   document.getElementById("ccont").textContent=c.ct;
+  document.getElementById("ccap").textContent=c.cap||"";
   document.getElementById("cbtitle").innerHTML=flagImgSmall(c.n,26)+"<span>"+c.n+"</span>";
   document.getElementById("cbitems").innerHTML=[
     ["🏛️ Столица",c.cap],["👥 Население",c.pop],
