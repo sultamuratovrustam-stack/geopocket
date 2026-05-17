@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>GeoPocket Pro</title>
+<meta name="theme-color" content="#6c63ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GeoPocket">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#eef4ff;height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
+.screen{display:none;flex:1;overflow-y:auto;padding:14px 13px 82px;flex-direction:column;}
+.screen.active{display:flex;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#090f18;border-top:1px solid #182838;display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
+.nitem{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 4px 7px;cursor:pointer;color:#3a6a84;font-size:.6rem;gap:3px;border:none;background:none;transition:color .15s;}
+.nitem .ni{font-size:1.4rem;line-height:1;}
+.nitem.active{color:#ffcc77;}
+.shead{font-size:1.1rem;font-weight:700;color:#ffcc77;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.stitle{font-size:.65rem;text-transform:uppercase;color:#3a6a84;letter-spacing:.08em;margin:12px 0 7px;}
+.pbar{height:4px;background:#0e1e2c;border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.pfill{height:100%;background:linear-gradient(90deg,#ffaa33,#ffdd88);border-radius:2px;transition:width .35s;}
+.chip-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;}
+.chip-row::-webkit-scrollbar{display:none;}
+.chip{background:#0e1e2c;border:1px solid #1a3448;border-radius:20px;color:#6aaac8;font-size:.72rem;padding:6px 13px;cursor:pointer;white-space:nowrap;transition:.1s;flex-shrink:0;}
+.chip.on{background:#ffcc77;color:#0a141f;border-color:#ffcc77;font-weight:700;}
+.bigbtn{background:#1e5a3a;border:none;border-radius:50px;padding:14px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;margin-top:14px;}
+.bigbtn:active{opacity:.85;}
+.badge{background:linear-gradient(135deg,#e88820,#ffcc55);color:#0a141f;border-radius:16px;padding:3px 10px;font-size:.68rem;font-weight:700;}
+
+/* MAP */
+#mapDiv{height:290px;border-radius:16px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1;}
+.map-load{height:290px;background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin-bottom:10px;}
+.leaflet-container{background:#1a3a50!important;font-family:system-ui,sans-serif!important;}
+.leaflet-control-attribution{font-size:8px!important;background:rgba(0,0,0,.5)!important;color:#aaa!important;}
+.leaflet-control-attribution a{color:#8ab!important;}
+.leaflet-bar a{background:#0e1e2c!important;color:#eef4ff!important;border-color:#1a3448!important;}
+.leaflet-bar a:hover{background:#1a3448!important;}
+.ctry-lbl{background:transparent!important;border:none!important;box-shadow:none!important;font-size:.58rem;font-weight:700;color:#0d1f2d;text-shadow:0 0 3px #fff,0 0 5px #fff,0 1px 2px #fff;white-space:nowrap;pointer-events:none!important;padding:0!important;}
+.ctry-lbl::before{display:none!important;}
+.rbtn{background:#0e1e2c;border:1px solid #1a3448;border-radius:18px;color:#6aaac8;font-size:.7rem;padding:5px 11px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.1s;}
+.rbtn:active{background:#1a3448;}
+.icard{background:#060f18;border-radius:16px;padding:13px;border:1px solid #122030;margin-top:8px;}
+.ititle{font-size:1rem;font-weight:700;color:#ffcc77;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.frow{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid #0e1e2c;gap:8px;}
+.frow:last-child{border:none;}
+.flabel{color:#4a8aaa;font-size:.65rem;min-width:78px;flex-shrink:0;padding-top:2px;}
+.fval{font-size:.79rem;text-align:right;flex:1;line-height:1.4;}
+.country-hint{text-align:center;color:#2a5a70;font-size:.72rem;padding:10px 0 2px;}
+
+/* CARDS */
+.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:240px;padding:10px 0;}
+.fc{width:100%;max-width:360px;height:240px;position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
+.fc.flip{transform:rotateY(180deg);}
+.cface{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:18px;}
+.cfront{background:linear-gradient(145deg,#172e3e,#0c1c2c);border:2px solid #254560;}
+.cback{background:linear-gradient(145deg,#172e22,#0c1c14);border:2px solid #255040;transform:rotateY(180deg);justify-content:flex-start;padding-top:20px;overflow:hidden;}
+.cflag{font-size:4rem;margin-bottom:8px;line-height:1;}
+.cname{font-size:1.5rem;font-weight:700;color:#ffcc77;text-align:center;line-height:1.2;}
+.ccont{font-size:.73rem;color:#3a6a84;margin-top:5px;}
+.chint{font-size:.63rem;color:#2a5060;margin-top:16px;}
+.cbtitle{font-size:1.05rem;font-weight:700;color:#55cc88;margin-bottom:10px;text-align:center;width:100%;}
+.cbrow{font-size:.78rem;margin-bottom:6px;display:flex;gap:8px;width:100%;}
+.cbrow span:first-child{color:#3a6a84;min-width:76px;flex-shrink:0;}
+.cbrow span:last-child{flex:1;line-height:1.3;}
+.swrow{display:flex;gap:14px;margin-top:14px;justify-content:center;}
+.swbtn{width:58px;height:58px;border-radius:50%;border:none;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 14px #0007;transition:transform .08s;display:flex;align-items:center;justify-content:center;}
+.swbtn:active{transform:scale(.9);}
+.sbno{background:#4a1c1c;}
+.sbfl{background:#1a3a50;}
+.sbyes{background:#1a4a2c;}
+.swipe-hint{font-size:.65rem;color:#2a5060;text-align:center;margin-top:8px;}
+.fc.swR .cfront{box-shadow:0 0 26px rgba(60,200,90,.4);}
+.fc.swL .cfront{box-shadow:0 0 26px rgba(200,60,60,.4);}
+
+/* QUIZ */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.tcard{background:#0e1e2c;border:1.5px solid #1a3448;border-radius:14px;padding:14px 10px;cursor:pointer;text-align:center;transition:.1s;}
+.tcard.on{border-color:#ffcc77;}
+.tcard:active{opacity:.8;}
+.tico{font-size:1.85rem;margin-bottom:5px;}
+.tname{font-size:.77rem;color:#9ac8e0;font-weight:500;}
+.qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:.72rem;color:#3a6a84;}
+.qsc{color:#ffcc77;font-weight:700;}
+.qbox{background:#060f18;border-radius:14px;padding:16px;margin-bottom:11px;border:1px solid #122030;text-align:center;}
+.qflag{font-size:2.6rem;margin-bottom:6px;}
+.qtxt{font-size:.88rem;color:#8ab8d0;}
+.qbold{font-size:.98rem;font-weight:700;color:#fff;margin-top:4px;}
+.opts{display:flex;flex-direction:column;gap:7px;}
+.opt{background:#0e1e2c;border:2px solid #1a3448;border-radius:13px;padding:13px 14px;cursor:pointer;font-size:.86rem;color:#eef4ff;display:flex;align-items:center;gap:10px;text-align:left;}
+.opt:active{transform:scale(.98);}
+.opt.ok{background:#142a1c;border-color:#44bb66;color:#66dd88;}
+.opt.bad{background:#2a1010;border-color:#bb4444;color:#ee6666;}
+.opt.off{pointer-events:none;}
+.olet{width:26px;height:26px;border-radius:50%;background:#060f18;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0;}
+.qnxt{background:#1e5a3a;border:none;border-radius:50px;padding:13px;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:11px;width:100%;display:none;}
+.qnxt.show{display:block;}
+.qres{display:none;text-align:center;padding:22px 14px;}
+.qres.show{display:block;}
+.remi{font-size:3.2rem;}
+.rscore{font-size:2.2rem;font-weight:700;color:#ffcc77;margin:7px 0;}
+.rlabel{color:#8ab8d0;margin-bottom:18px;font-size:.88rem;}
+.rbtn2{background:#1a3448;border:none;border-radius:50px;padding:11px 22px;color:#fff;font-size:.86rem;font-weight:700;cursor:pointer;margin:5px;}
+
+/* COUNTRIES */
+.csearch{width:100%;background:#0e1e2c;border:1px solid #1a3448;border-radius:12px;color:#eef4ff;font-size:.88rem;padding:10px 14px;margin-bottom:10px;outline:none;-webkit-appearance:none;}
+.csearch::placeholder{color:#2a5060;}
+.ctr-card{background:#060f18;border:1px solid #122030;border-radius:14px;margin-bottom:8px;overflow:hidden;transition:border-color .15s;}
+.ctr-card.open{border-color:#254560;}
+.ctr-head{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;}
+.ctr-flag{flex-shrink:0;}
+.ctr-info{flex:1;min-width:0;}
+.ctr-name{font-size:.9rem;font-weight:700;color:#eef4ff;}
+.ctr-sub{font-size:.63rem;color:#3a6a84;margin-top:2px;}
+.ctr-arr{font-size:.8rem;color:#2a5060;transition:transform .2s;flex-shrink:0;}
+.ctr-card.open .ctr-arr{transform:rotate(180deg);color:#ffcc77;}
+.ctr-body{display:none;padding:0 13px 13px;}
+.ctr-card.open .ctr-body{display:block;}
+.ctr-sec{font-size:.6rem;text-transform:uppercase;color:#3a6a84;letter-spacing:.08em;margin:9px 0 4px;}
+.ctr-fact{font-size:.75rem;color:#8ab8d0;margin-bottom:5px;padding-left:9px;border-left:2px solid #1a3448;line-height:1.4;}
+.ctr-known{font-size:.73rem;color:#55cc88;font-style:italic;padding-left:9px;margin:4px 0 8px;}
+.ctr-cities{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.ctr-city{background:#0a1a28;border-radius:8px;font-size:.66rem;color:#6aaac8;padding:3px 9px;}
+.ctr-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0a1a28;font-size:.75rem;}
+.ctr-row:last-child{border:none;}
+.ctr-rl{color:#4a8aaa;}.ctr-rv{color:#eef4ff;text-align:right;flex:1;margin-left:8px;}
+/* Russia */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px;}
+.rep-item{background:#0a1a28;border-radius:8px;padding:7px 9px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
+.rep-item:active{background:#112030;}
+.rep-item:hover{border-color:#254560;}
+.rep-name{font-size:.67rem;color:#8ab8d0;font-weight:600;}
+.rep-cap{font-size:.61rem;color:#3a6a84;margin-top:1px;}
+.mil-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #0a1a28;font-size:.73rem;}
+.mil-row:last-child{border:none;}
+.mil-name{color:#eef4ff;}
+.mil-pop{color:#ffcc77;font-weight:700;}
+/* Republic modal */
+.rep-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+.rep-modal-bg.show{display:flex;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.rep-modal{background:#0d1e2e;border-radius:22px 22px 0 0;width:100%;max-width:520px;padding:20px 18px 36px;border-top:2px solid #1e3e5e;max-height:85vh;overflow-y:auto;}
+.rep-modal-close{float:right;background:none;border:none;color:#3a6a84;font-size:1.5rem;cursor:pointer;line-height:1;padding:0 2px;}
+.rep-modal-title{font-size:1.1rem;font-weight:700;color:#ffcc77;margin-bottom:2px;}
+.rep-modal-cap{font-size:.72rem;color:#3a6a84;margin-bottom:14px;}
+.rep-modal-sec{font-size:.6rem;text-transform:uppercase;color:#3a6a84;letter-spacing:.08em;margin:11px 0 5px;}
+.rep-modal-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0e1e2c;font-size:.78rem;}
+.rep-modal-row:last-child{border:none;}
+.rep-modal-rl{color:#4a8aaa;}
+.rep-modal-rv{color:#eef4ff;text-align:right;flex:1;margin-left:8px;}
+.rep-modal-known{font-size:.76rem;color:#55cc88;font-style:italic;padding-left:9px;line-height:1.4;}
+.rep-trad{font-size:.76rem;color:#8ab8d0;padding:5px 0 5px 9px;border-left:2px solid #1e3e5e;margin-bottom:5px;line-height:1.4;}
+.rep-trad::before{content:"✦ ";color:#ffcc77;font-size:.6rem;}
+.eth-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.eth-label{font-size:.72rem;color:#eef4ff;min-width:140px;flex-shrink:0;}
+.eth-bar-wrap{flex:1;background:#0a1a28;border-radius:4px;height:6px;overflow:hidden;}
+.eth-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,#3a8ac8,#66ccff);}
+.eth-pct{font-size:.68rem;color:#ffcc77;font-weight:700;min-width:34px;text-align:right;}
+</style>
+</head>
+<body>
+
+<!-- MAP -->
+<div class="screen active" id="s-map">
+  <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
+  <div id="mapLoad" class="map-load">🌍 Загрузка карты…</div>
+  <div id="mapDiv"></div>
+  <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
+  <div class="stitle">Континенты</div>
+  <div class="chip-row" id="contBtns"></div>
+  <div class="stitle">Океаны и моря</div>
+  <div class="chip-row" id="waterBtns"></div>
+  <div class="icard" id="icard">
+    <div class="ititle" id="iTitle">🌐 Выбери регион</div>
+    <div id="iRows"><div class="frow"><span class="flabel">Подсказка</span><span class="fval">Тапни на страну на карте или выбери кнопку выше</span></div></div>
+  </div>
+</div>
+
+<!-- CARDS -->
+<div class="screen" id="s-cards">
+  <div class="shead"><span>📚 Карточки</span><span id="knownBadge" style="font-size:.76rem;color:#55cc88;"></span></div>
+  <div class="chip-row" id="cardFilters"></div>
+  <div class="pbar"><div class="pfill" id="cPfill" style="width:0%"></div></div>
+  <div style="font-size:.66rem;color:#3a6a84;text-align:center;margin-bottom:10px;" id="cPtxt">0 из 0</div>
+  <div class="fc-wrap">
+    <div class="fc" id="fc">
+      <div class="cface cfront">
+        <div class="cflag" id="cflag">🌍</div>
+        <div class="cname" id="cname">Выбери фильтр</div>
+        <div class="ccont" id="ccont"></div>
+        <div class="chint">Тап — перевернуть</div>
+      </div>
+      <div class="cface cback">
+        <div class="cbtitle" id="cbtitle"></div>
+        <div id="cbitems"></div>
+      </div>
+    </div>
+  </div>
+  <div class="swipe-hint">← Не знаю &nbsp;·&nbsp; Знаю →</div>
+  <div class="swrow">
+    <button class="swbtn sbno" id="bNo">❌</button>
+    <button class="swbtn sbfl" id="bFlip">🔄</button>
+    <button class="swbtn sbyes" id="bYes">✅</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="s-quiz">
+  <div class="shead"><span>🧪 Тест</span><span id="qRecord" style="font-size:.73rem;color:#ffcc77;"></span></div>
+  <div id="qMenu">
+    <div class="stitle">Тема</div>
+    <div class="tgrid" id="tGrid"></div>
+    <div class="stitle">Сложность</div>
+    <div class="chip-row" id="dRow">
+      <span class="chip on" data-d="easy">🟢 Лёгкий</span>
+      <span class="chip" data-d="mid">🟡 Средний</span>
+      <span class="chip" data-d="hard">🔴 Эксперт</span>
+    </div>
+    <div class="stitle">Вопросов</div>
+    <div class="chip-row" id="nRow">
+      <span class="chip" data-n="5">5</span>
+      <span class="chip on" data-n="10">10</span>
+      <span class="chip" data-n="20">20</span>
+    </div>
+    <button class="bigbtn" id="startBtn">▶️ Начать тест</button>
+  </div>
+  <div id="qPlay" style="display:none;flex-direction:column;">
+    <div class="qhead"><span id="qPtxt">1/10</span><span class="qsc" id="qSc">0 ✅</span></div>
+    <div class="pbar" style="margin-bottom:11px;"><div class="pfill" id="qPf" style="width:0%"></div></div>
+    <div class="qbox">
+      <div class="qflag" id="qFlag">🌍</div>
+      <div class="qtxt" id="qTxt"></div>
+      <div class="qbold" id="qBold"></div>
+    </div>
+    <div class="opts" id="qOpts"></div>
+    <button class="qnxt" id="qNxt">Следующий →</button>
+    <div class="qres" id="qRes">
+      <div class="remi" id="rEmi">🏆</div>
+      <div class="rscore" id="rSc">10/10</div>
+      <div class="rlabel" id="rLbl"></div>
+      <button class="rbtn2" id="retryBtn">🔄 Ещё раз</button>
+      <button class="rbtn2" onclick="showMenu()">📋 Меню</button>
+    </div>
+  </div>
+</div>
+
+<!-- COUNTRIES -->
+<div class="screen" id="s-countries">
+  <div class="shead"><span>🌐 Страны мира</span><span class="badge" id="ctrBadge"></span></div>
+  <input class="csearch" id="csearch" type="search" placeholder="🔍 Найти страну…" autocomplete="off" spellcheck="false">
+  <div class="chip-row" id="ctrFilter"></div>
+  <div id="ctrList"></div>
+</div>
+
+<!-- Republic modal -->
+<div class="rep-modal-bg" id="repModalBg" onclick="closeRepModal(event)">
+  <div class="rep-modal" id="repModal">
+    <button class="rep-modal-close" onclick="closeRepModal()">✕</button>
+    <div class="rep-modal-title" id="repModalTitle"></div>
+    <div class="rep-modal-cap" id="repModalCap"></div>
+    <div id="repModalBody"></div>
+  </div>
+</div>
+
+<nav class="bnav">
+  <button class="nitem active" data-s="map"><span class="ni">🗺️</span>Карта</button>
+  <button class="nitem" data-s="cards"><span class="ni">📚</span>Учить</button>
+  <button class="nitem" data-s="quiz"><span class="ni">🧪</span>Тест</button>
+  <button class="nitem" data-s="countries"><span class="ni">🌐</span>Страны</button>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════ DATA
+const C = [
+  {n:"Россия",        f:"🇷🇺",ct:"Евразия",      cap:"Москва",        re:"Федеративная республика",   pop:"146 млн",   rel:"Православие",          ci:"Москва, Санкт-Петербург, Новосибирск, Екатеринбург, Казань", facts:["Самая большая страна мира — 17,1 млн км²","Граничит с 16 государствами","Байкал — глубочайшее озеро планеты (1 642 м)"],known:"Балет, космос, Байкал, Транссибирская магистраль"},
+  {n:"США",           f:"🇺🇸",ct:"Сев.Америка", cap:"Вашингтон",     re:"Президентская республика",  pop:"335 млн",   rel:"Протестантизм",        ci:"Нью-Йорк, Лос-Анджелес, Чикаго, Хьюстон, Феникс",          facts:["Первая экономика мира","Высадила людей на Луну в 1969 году","50 штатов, 335 млн жителей"],known:"Голливуд, NASA, Статуя Свободы, Силиконовая долина"},
+  {n:"Китай",         f:"🇨🇳",ct:"Евразия",      cap:"Пекин",         re:"Однопартийная республика",  pop:"1,45 млрд", rel:"Буддизм, даосизм",     ci:"Шанхай, Пекин, Гуанчжоу, Шэньчжэнь, Чэнду",                facts:["Вторая экономика мира и крупнейший экспортёр","Великая стена длиной 21 000 км","1,4 млрд жителей — первое место до 2023 года"],known:"Великая стена, чай, шёлк, фейерверки, панды"},
+  {n:"Индия",         f:"🇮🇳",ct:"Евразия",      cap:"Нью-Дели",      re:"Парламентская республика",  pop:"1,43 млрд", rel:"Индуизм",              ci:"Мумбаи, Дели, Бангалор, Ченнаи, Калькутта",                 facts:["Самая населённая страна мира с 2023 года","Родина буддизма, индуизма и шахмат","Болливуд — крупнейшая киноиндустрия мира по числу фильмов"],known:"Тадж-Махал, специи, йога, Болливуд, curry"},
+  {n:"Бразилия",      f:"🇧🇷",ct:"Юж.Америка",  cap:"Бразилиа",      re:"Федеративная республика",   pop:"216 млн",   rel:"Католицизм",           ci:"Сан-Паулу, Рио-де-Жанейро, Бразилиа, Салвадор",            facts:["Крупнейшая страна Южной Америки","Амазония — 60% территории, лёгкие планеты","Пять побед на чемпионатах мира по футболу"],known:"Карнавал, футбол, Амазония, кофе, самба"},
+  {n:"Германия",      f:"🇩🇪",ct:"Евразия",      cap:"Берлин",        re:"Федеративная республика",   pop:"84 млн",    rel:"Христианство",         ci:"Берлин, Гамбург, Мюнхен, Кёльн, Франкфурт",                 facts:["Крупнейшая экономика Европы","Родина Баха, Бетховена, Гёте, Маркса","Воссоединилась после раскола в 1990 году"],known:"Автомобили BMW/Mercedes, пиво, Октябрфест, Берлинская стена"},
+  {n:"Франция",       f:"🇫🇷",ct:"Евразия",      cap:"Париж",         re:"Президентская республика",  pop:"68 млн",    rel:"Католицизм",           ci:"Париж, Марсель, Лион, Тулуза, Ницца",                        facts:["Лидер по числу туристов в мире","Родина Наполеона и Великой революции","Страна высокой кухни, вина и моды"],known:"Эйфелева башня, вино, мода, Лувр, Наполеон"},
+  {n:"Великобритания",f:"🇬🇧",ct:"Евразия",      cap:"Лондон",        re:"Конституционная монархия",  pop:"67 млн",    rel:"Англиканство",         ci:"Лондон, Бирмингем, Манчестер, Глазго, Эдинбург",            facts:["Бывшая империя, охватывавшая четверть суши","Родина Шекспира, Ньютона, Beatles, Гарри Поттера","Парламентская демократия с Великой хартии 1215 года"],known:"Биг-Бен, Beatles, Гарри Поттер, Шекспир, чай"},
+  {n:"Япония",        f:"🇯🇵",ct:"Евразия",      cap:"Токио",         re:"Конституционная монархия",  pop:"125 млн",   rel:"Синтоизм, буддизм",    ci:"Токио, Осака, Иокогама, Нагоя, Саппоро",                    facts:["Третья экономика мира","Самая высокая продолжительность жизни в мире","Более 1 500 землетрясений в год"],known:"Суши, аниме, самураи, сакура, Toyota/Sony"},
+  {n:"Канада",        f:"🇨🇦",ct:"Сев.Америка", cap:"Оттава",        re:"Конституционная монархия",  pop:"39 млн",    rel:"Христианство",         ci:"Торонто, Ванкувер, Монреаль, Калгари, Оттава",               facts:["Вторая по площади страна мира — 9,98 млн км²","Крупнейшие запасы пресной воды на планете","Двуязычная: английский и французский — оба официальны"],known:"Кленовый сироп, хоккей, Ниагара, горы, мультикультурность"},
+  {n:"Мексика",       f:"🇲🇽",ct:"Сев.Америка", cap:"Мехико",        re:"Президентская республика",  pop:"129 млн",   rel:"Католицизм",           ci:"Мехико, Гвадалахара, Монтеррей, Канкун",                    facts:["Родина цивилизаций майя и ацтеков","Одиннадцатая экономика мира","Треть территории — пустыни и горы"],known:"Текила, тако, Чичен-Ица, Фрида Кало, сомбреро"},
+  {n:"Египет",        f:"🇪🇬",ct:"Африка",       cap:"Каир",          re:"Президентская республика",  pop:"112 млн",   rel:"Ислам",                ci:"Каир, Александрия, Гиза, Луксор, Асуан",                    facts:["Цивилизация старше 5 000 лет","Нил — главная артерия страны и жизни","Суэцкий канал — ключевой путь мировой торговли"],known:"Пирамиды Гизы, Нил, фараоны, Сфинкс, папирус"},
+  {n:"ЮАР",           f:"🇿🇦",ct:"Африка",       cap:"Претория",      re:"Парламентская республика",  pop:"60 млн",    rel:"Христианство",         ci:"Йоханнесбург, Кейптаун, Дурбан, Претория",                  facts:["Три столицы: Претория, Кейптаун, Блумфонтейн","11 официальных языков","Конец апартеида в 1994 году под руководством Манделы"],known:"Алмазы, сафари, Нельсон Мандела, мыс Доброй Надежды"},
+  {n:"Нигерия",       f:"🇳🇬",ct:"Африка",       cap:"Абуджа",        re:"Федеративная республика",   pop:"223 млн",   rel:"Ислам, христианство",  ci:"Лагос, Кано, Ибадан, Абуджа, Порт-Харкорт",                facts:["Крупнейшая экономика Африки","Более 250 этносов и народностей","Нолливуд — вторая по объёму киноиндустрия мира"],known:"Нефть, Нолливуд, ткань анкара, афробит"},
+  {n:"Аргентина",     f:"🇦🇷",ct:"Юж.Америка",  cap:"Буэнос-Айрес",  re:"Президентская республика",  pop:"46 млн",    rel:"Католицизм",           ci:"Буэнос-Айрес, Кордова, Росарио, Мендоса",                   facts:["Восьмая страна по площади в мире","Родина Месси, Марадоны и танго","Патагония — малонаселённый юг с уникальной природой"],known:"Танго, футбол, мате, Патагония, стейк"},
+  {n:"Индонезия",     f:"🇮🇩",ct:"Евразия",      cap:"Джакарта",      re:"Президентская республика",  pop:"277 млн",   rel:"Ислам",                ci:"Джакарта, Сурабая, Бандунг, Медан, Бали",                   facts:["Крупнейший архипелаг: более 17 000 островов","Четвёртая страна мира по населению","Крупнейшее мусульманское государство по числу верующих"],known:"Бали, Комодо, батик, тропические джунгли, орангутан"},
+  {n:"Пакистан",      f:"🇵🇰",ct:"Евразия",      cap:"Исламабад",     re:"Исламская республика",      pop:"240 млн",   rel:"Ислам",                ci:"Карачи, Лахор, Исламабад, Фейсалабад, Равалпинди",         facts:["К2 — вторая вершина мира (8 611 м)","Ядерная держава с 1998 года","240 млн жителей — пятое место в мире"],known:"К2, Мохенджо-Даро, крикет, карри, суфизм"},
+  {n:"Бангладеш",     f:"🇧🇩",ct:"Евразия",      cap:"Дакка",         re:"Парламентская республика",  pop:"172 млн",   rel:"Ислам",                ci:"Дакка, Читтагонг, Кхулна, Раджшахи",                        facts:["Самая плотно населённая большая страна мира","Дельта Ганга и Брахмапутры — крупнейшая в мире","Крупнейший в мире экспортёр текстиля и одежды"],known:"Дельта Ганга, рикши, джут, текстиль, Сундарбан"},
+  {n:"Турция",        f:"🇹🇷",ct:"Евразия",      cap:"Анкара",        re:"Президентская республика",  pop:"85 млн",    rel:"Ислам",                ci:"Стамбул, Анкара, Измир, Бурса, Анталья",                    facts:["На стыке Европы и Азии","Стамбул — единственный мегаполис сразу в двух частях света","Родина кофе по-турецки, кебаба и бани-хаммам"],known:"Стамбул, Каппадокия, турецкий кофе, ковры, Эфес"},
+  {n:"Иран",          f:"🇮🇷",ct:"Евразия",      cap:"Тегеран",       re:"Исламская республика",      pop:"88 млн",    rel:"Шиитский ислам",       ci:"Тегеран, Мешхед, Исфахан, Шираз, Тебриз",                  facts:["Наследник Персидской империи с 5 000-летней историей","Вторые в мире запасы природного газа","Шиитский ислам — государственная религия с 1979 года"],known:"Персидская цивилизация, шафран, ковры, Персеполь"},
+  {n:"Австралия",     f:"🇦🇺",ct:"Австралия",    cap:"Канберра",      re:"Конституционная монархия",  pop:"26 млн",    rel:"Христианство",         ci:"Сидней, Мельбурн, Брисбен, Перт, Аделаида",                facts:["Шестая страна по площади","Кенгуру, коалы, утконосы — уникальная фауна","Большой Барьерный риф — крупнейшая коралловая система"],known:"Большой риф, кенгуру, Сиднейская опера, бумеранг"},
+  {n:"Италия",        f:"🇮🇹",ct:"Евразия",      cap:"Рим",           re:"Парламентская республика",  pop:"59 млн",    rel:"Католицизм",           ci:"Рим, Милан, Неаполь, Турин, Флоренция",                     facts:["Родина Римской империи и эпохи Возрождения","Больше объектов ЮНЕСКО, чем в любой другой стране","Ferrari, Prada, Gucci, Lamborghini — символы стиля"],known:"Рим, пицца, паста, мода, Колизей, Леонардо да Винчи"},
+  {n:"Испания",       f:"🇪🇸",ct:"Евразия",      cap:"Мадрид",        re:"Конституционная монархия",  pop:"47 млн",    rel:"Католицизм",           ci:"Мадрид, Барселона, Валенсия, Севилья, Бильбао",             facts:["Второй по популярности туристический рынок Европы","Родина Пикассо, Сальвадора Дали и Гауди","17 автономных регионов с широкими правами"],known:"Коррида, фламенко, Барселона, Гауди, сиеста"},
+  {n:"Корея",         f:"🇰🇷",ct:"Евразия",      cap:"Сеул",          re:"Президентская республика",  pop:"51 млн",    rel:"Христианство, буддизм",ci:"Сеул, Пусан, Инчхон, Тэгу",                                 facts:["«Чудо на Хангане» — экономический рывок за 30 лет","Родина K-pop и корейской кухни","Samsung, LG, Hyundai — мировые технологические бренды"],known:"K-pop, кимчи, Samsung, Сеул, K-drama"},
+  {n:"Саудовская Аравия",f:"🇸🇦",ct:"Евразия",  cap:"Эр-Рияд",       re:"Абсолютная монархия",       pop:"36 млн",    rel:"Ислам",                ci:"Эр-Рияд, Джидда, Мекка, Медина, Даммам",                    facts:["25% мировых доказанных запасов нефти","Хранитель Мекки и Медины — святынь ислама","Женщинам разрешили водить машину лишь в 2018 году"],known:"Мекка, нефть, пустыня, Vision 2030, хадж"},
+  {n:"Колумбия",      f:"🇨🇴",ct:"Юж.Америка",  cap:"Богота",        re:"Президентская республика",  pop:"52 млн",    rel:"Католицизм",           ci:"Богота, Медельин, Кали, Картахена, Барранкилья",            facts:["Крупнейший в мире производитель качественного кофе","Родина Габриэля Гарсии Маркеса","Омывается и Тихим океаном, и Карибским морем"],known:"Кофе, изумруды, кумбия, Магический реализм"},
+  {n:"Чили",          f:"🇨🇱",ct:"Юж.Америка",  cap:"Сантьяго",      re:"Президентская республика",  pop:"19 млн",    rel:"Католицизм",           ci:"Сантьяго, Вальпараисо, Консепсьон, Антофагаста",           facts:["Самая длинная страна мира — 4 300 км с севера на юг","Пустыня Атакама — самое сухое место на планете","Крупнейший в мире производитель меди"],known:"Атакама, медь, вино, Патагония, Пасхальный остров"},
+  {n:"Перу",          f:"🇵🇪",ct:"Юж.Америка",  cap:"Лима",          re:"Президентская республика",  pop:"34 млн",    rel:"Католицизм",           ci:"Лима, Арекипа, Трухильо, Куско",                            facts:["Родина цивилизации инков и Мачу-Пикчу","Исток реки Амазонки находится в Андах Перу","Крупнейший в мире производитель серебра"],known:"Мачу-Пикчу, инки, картофель, лама, писко"},
+  {n:"Венесуэла",     f:"🇻🇪",ct:"Юж.Америка",  cap:"Каракас",       re:"Президентская республика",  pop:"28 млн",    rel:"Католицизм",           ci:"Каракас, Маракайбо, Валенсия, Барquisimeto",               facts:["Крупнейшие в мире доказанные запасы нефти","Водопад Анхель — самый высокий в мире (979 м)","Экономический кризис и гиперинфляция с 2010-х годов"],known:"Водопад Анхель, нефть, Симон Боливар"},
+  {n:"Украина",       f:"🇺🇦",ct:"Евразия",      cap:"Киев",          re:"Президентская республика",  pop:"41 млн",    rel:"Православие",          ci:"Киев, Харьков, Одесса, Днепр, Львов",                       facts:["Вторая по площади страна Европы","Чернобыль — крупнейшая ядерная катастрофа в истории (1986)","Крупнейший в мире производитель подсолнечного масла"],known:"Борщ, вышиванка, Чернобыль, чернозём, Киево-Печерская лавра"},
+  {n:"Польша",        f:"🇵🇱",ct:"Евразия",      cap:"Варшава",       re:"Парламентская республика",  pop:"38 млн",    rel:"Католицизм",           ci:"Варшава, Краков, Лодзь, Вроцлав, Познань",                  facts:["Трижды разделялась и исчезала с карты истории","Родина Коперника, Шопена и Марии Кюри","Одна из наиболее быстро растущих экономик Центральной Европы"],known:"Краков, Шопен, Варшава, янтарь, пьерogi"},
+  {n:"Казахстан",     f:"🇰🇿",ct:"Евразия",      cap:"Астана",        re:"Президентская республика",  pop:"19 млн",    rel:"Ислам",                ci:"Алматы, Астана, Шымкент, Актобе",                           facts:["Девятая страна в мире по площади","Байконур — первый космодром человечества","Бескрайние евразийские степи — Великая степь"],known:"Байконур, степи, конина, юрты, Великий Шёлковый путь"},
+  {n:"Норвегия",      f:"🇳🇴",ct:"Евразия",      cap:"Осло",          re:"Конституционная монархия",  pop:"5,4 млн",   rel:"Лютеранство",          ci:"Осло, Берген, Тронхейм, Ставангер",                         facts:["Самая длинная береговая линия Европы с фьордами","Нефть и газ — основа богатства страны с 1960-х","Один из самых высоких ВВП на душу в мире"],known:"Фьорды, северное сияние, нефть, лосось, Эдвард Мунк"},
+  {n:"Швеция",        f:"🇸🇪",ct:"Евразия",      cap:"Стокгольм",     re:"Конституционная монархия",  pop:"10,5 млн",  rel:"Лютеранство",          ci:"Стокгольм, Гётеборг, Мальмё, Уппсала",                     facts:["Родина IKEA, Spotify, Skype, Volvo, H&M","Альфред Нобель учредил Нобелевские премии","Один из мировых лидеров по ВВП на душу населения"],known:"IKEA, Нобелевская премия, ABBA, Pippi, Volvo"},
+  {n:"Финляндия",     f:"🇫🇮",ct:"Евразия",      cap:"Хельсинки",     re:"Парламентская республика",  pop:"5,5 млн",   rel:"Лютеранство",          ci:"Хельсинки, Тампере, Турку, Оулу",                           facts:["Лучшая система образования в мире по рейтингам PISA","Лапландия — официальная родина Деда Мороза","3 млн саун на 5,5 млн жителей — сауна как ритуал"],known:"Сауна, Санта-Клаус, Nokia, Муми-тролли, хвойные леса"},
+  {n:"Таиланд",       f:"🇹🇭",ct:"Евразия",      cap:"Бангкок",       re:"Конституционная монархия",  pop:"70 млн",    rel:"Буддизм",              ci:"Бангкок, Чиангмай, Паттайя, Пхукет",                        facts:["«Страна улыбок» — приветливость как культурный код","Крупнейший в мире экспортёр риса","Более 40 000 буддийских храмов по всей стране"],known:"Буддийские храмы, слоны, тайский массаж, стритфуд, острова"},
+  {n:"Вьетнам",       f:"🇻🇳",ct:"Евразия",      cap:"Ханой",         re:"Однопартийная республика",  pop:"98 млн",    rel:"Буддизм",              ci:"Хошимин, Ханой, Дананг, Хайфон",                            facts:["Участвовал в трёх крупных войнах XX века","Быстро растущая экономика Юго-Восточной Азии","Бухта Халонг — тысячи известняковых островов в море"],known:"Фо, Халонг, кофе с молоком, вьетнамская война, шёлк"},
+  {n:"Марокко",       f:"🇲🇦",ct:"Африка",       cap:"Рабат",         re:"Конституционная монархия",  pop:"37 млн",    rel:"Ислам",                ci:"Касабланка, Рабат, Фес, Марракеш, Агадир",                  facts:["Ближайшая к Европе страна Африки (14 км до Испании)","Горы Атлас пересекают страну с запада на восток","Марракеш — «красный город», медина — объект ЮНЕСКО"],known:"Сахара, Марракеш, тажин, арабески, берберы"},
+  {n:"Кения",         f:"🇰🇪",ct:"Африка",       cap:"Найроби",       re:"Президентская республика",  pop:"54 млн",    rel:"Христианство",         ci:"Найроби, Момбаса, Кисуму, Накуру",                          facts:["Масаи-Мара — лучшее сафари мира","Лучшие в мире бегуны на длинные дистанции","Найроби — деловой и технологический хаб Восточной Африки"],known:"Сафари, масаи, марафонцы, чай, Килиманджаро"},
+  {n:"Ангола",        f:"🇦🇴",ct:"Африка",       cap:"Луанда",        re:"Президентская республика",  pop:"35 млн",    rel:"Христианство",         ci:"Луанда, Уамбо, Уила, Бенгела",                              facts:["Крупный производитель нефти в Африке","Длительная гражданская война (1975–2002)","Богатейшие запасы алмазов и нефти"],known:"Нефть, алмазы, самба, кизомба"},
+  {n:"Израиль",       f:"🇮🇱",ct:"Евразия",      cap:"Иерусалим",     re:"Парламентская республика",  pop:"9,3 млн",   rel:"Иудаизм",              ci:"Иерусалим, Тель-Авив, Хайфа, Беэр-Шева",                   facts:["Один из мировых лидеров hi-tech и стартапов","Родина трёх мировых религий: иудаизм, христианство, ислам","Мёртвое море — самое низкое место суши (−430 м)"],known:"Хай-тек, Иерусалим, Мёртвое море, хумус, история"},
+  {n:"ОАЭ",           f:"🇦🇪",ct:"Евразия",      cap:"Абу-Даби",      re:"Федеративная монархия",     pop:"9,4 млн",   rel:"Ислам",                ci:"Дубай, Абу-Даби, Шарджа, Аджман",                           facts:["Один из самых высоких ВВП на душу населения","Бурдж-Халифа — самое высокое здание мира (828 м)","95% территории страны — пустыня"],known:"Дубай, Бурдж-Халифа, роскошь, шопинг, пустыня"},
+  {n:"Малайзия",      f:"🇲🇾",ct:"Евразия",      cap:"Куала-Лумпур",  re:"Конституционная монархия",  pop:"33 млн",    rel:"Ислам",                ci:"Куала-Лумпур, Джорджтаун, Джохор-Бару, Кота-Кинабалу",     facts:["Крупнейший в мире производитель пальмового масла","Башни Петронас — символ страны и Куала-Лумпура","13 штатов и 3 федеральные территории"],known:"Петронас, дуриан, пальмовое масло, джунгли Борнео"},
+  {n:"Филиппины",     f:"🇵🇭",ct:"Евразия",      cap:"Манила",        re:"Президентская республика",  pop:"114 млн",   rel:"Католицизм",           ci:"Манила, Себу, Давао, Кесон-Сити",                           facts:["Архипелаг из 7 641 острова","Третья по числу англоговорящих страна в Азии","Множество вулканов и частые землетрясения"],known:"Острова, Палаван, боксёр Пакьяо, Пасха, острые блюда"},
+  {n:"Греция",        f:"🇬🇷",ct:"Евразия",      cap:"Афины",         re:"Парламентская республика",  pop:"10,4 млн",  rel:"Православие",          ci:"Афины, Салоники, Патры, Ларисса",                           facts:["Колыбель европейской цивилизации и демократии","Акрополь и Олимпийские игры — наследие Эллады","Более 6 000 островов в Эгейском и Ионическом морях"],known:"Акрополь, Олимпийские игры, фета, йогурт, Санторини"},
+  {n:"Чехия",         f:"🇨🇿",ct:"Евразия",      cap:"Прага",         re:"Парламентская республика",  pop:"10,5 млн",  rel:"Христианство",         ci:"Прага, Брно, Острава, Пльзень",                             facts:["Прага — одна из красивейших средневековых столиц мира","Крупнейшее в мире потребление пива на душу населения","Родина Кафки, Дворжака, Кундеры"],known:"Пражский замок, пиво, Кафка, хрусталь, Карловы Вары"},
+  {n:"Португалия",    f:"🇵🇹",ct:"Евразия",      cap:"Лиссабон",      re:"Парламентская республика",  pop:"10,3 млн",  rel:"Католицизм",           ci:"Лиссабон, Порту, Брага, Коимбра",                           facts:["Первая морская империя Нового времени — XV–XVI вв.","Родина фаду — меланхоличного музыкального жанра","Лиссабон — старейшая столица Западной Европы"],known:"Фаду, пастель де ната, порт, Васко да Гама, Синтра"},
+  {n:"Новая Зеландия",f:"🇳🇿",ct:"Австралия",   cap:"Веллингтон",    re:"Конституционная монархия",  pop:"5,1 млн",   rel:"Христианство",         ci:"Окленд, Веллингтон, Крайстчерч, Гамильтон",                facts:["Первой встречает Новый год на планете","«Властелин колец» и «Хоббит» сняты полностью здесь","Уникальная фауна: киви, попугай какапо, туатара"],known:"Хоббит, киви, регби All Blacks, фьорды, маори"},
+  {n:"Сингапур",      f:"🇸🇬",ct:"Евразия",      cap:"Сингапур",      re:"Парламентская республика",  pop:"5,6 млн",   rel:"Буддизм",              ci:"Сингапур",                                                  facts:["Город-государство с ВВП выше большинства крупных стран","Один из самых чистых и безопасных городов мира","Финансовый и логистический хаб всей Азии"],known:"Марина Бэй Сэндс, мультикультурность, чистота, чили-краб"},
+  {n:"Швейцария",     f:"🇨🇭",ct:"Евразия",      cap:"Берн",          re:"Федеративная республика",   pop:"8,8 млн",   rel:"Христианство",         ci:"Цюрих, Женева, Берн, Базель, Лозанна",                      facts:["Нейтральна с 1815 года — не участвует в войнах","Женевские конвенции о правах человека подписаны здесь","Родина Красного Креста и штаб-квартир ООН"],known:"Шоколад, сыр, часы, банки, Альпы, нейтралитет"},
+  {n:"Нидерланды",    f:"🇳🇱",ct:"Евразия",      cap:"Амстердам",     re:"Конституционная монархия",  pop:"17,9 млн",  rel:"Христианство",         ci:"Амстердам, Роттердам, Гаага, Утрехт",                       facts:["40% территории ниже уровня моря — защищена дамбами","Крупнейший в мире производитель и экспортёр цветов","Родина Рембрандта, Ван Гога, Вермеера"],known:"Тюльпаны, мельницы, велосипеды, Ван Гог, дамбы"},
+  {n:"Бельгия",       f:"🇧🇪",ct:"Евразия",      cap:"Брюссель",      re:"Конституционная монархия",  pop:"11,6 млн",  rel:"Католицизм",           ci:"Брюссель, Антверпен, Гент, Льеж",                           facts:["Столица ЕС и НАТО расположена в Брюсселе","Родина шоколада, вафель, картошки фри и 1 500 сортов пива","Три официальных языка: нидерландский, французский, немецкий"],known:"Шоколад, Атомиум, Манекен Пис, пиво, Эркюль Пуаро"},
+  // 52 — Европа
+  {n:"Австрия",      f:"🇦🇹", ct:"Евразия",       cap:"Вена",          re:"Федеративная республика",      pop:"9,1 млн",   rel:"Католицизм",             ci:"Вена, Грац, Линц",           facts:["Родина Моцарта и Шуберта","Бывшая Австро-Венгерская империя","Вена — мировая столица классической музыки"],           known:"Классическая музыка, горные лыжи, венский шницель"},
+  {n:"Венгрия",      f:"🇭🇺", ct:"Евразия",       cap:"Будапешт",      re:"Парламентская республика",      pop:"9,7 млн",   rel:"Католицизм",             ci:"Будапешт, Дебрецен, Мишкольц",facts:["Будапешт — один из красивейших городов Европы","Озеро Балатон — крупнейшее в Центральной Европе","Венгерский язык не относится к индоевропейской семье"],known:"Термальные купальни, паприка, токайское вино"},
+  {n:"Румыния",      f:"🇷🇴", ct:"Евразия",       cap:"Бухарест",      re:"Президентская республика",     pop:"19 млн",    rel:"Православие",            ci:"Бухарест, Клуж-Напока, Тимишоара",facts:["Замок Бран — прообраз замка Дракулы","Карпаты занимают треть территории","Бухарест называли «Маленьким Парижем»"],known:"Трансильвания, Дракула, Карпаты"},
+  {n:"Болгария",     f:"🇧🇬", ct:"Евразия",       cap:"София",         re:"Парламентская республика",     pop:"6,5 млн",   rel:"Православие",            ci:"София, Пловдив, Варна",      facts:["Одно из древнейших государств Европы (681 г.)","Производит 80% мирового эфирного масла розы","Кириллица создана болгарскими монахами Кириллом и Мефодием"],known:"Розовая долина, Черноморское побережье, кириллица"},
+  {n:"Сербия",       f:"🇷🇸", ct:"Евразия",       cap:"Белград",       re:"Парламентская республика",     pop:"6,9 млн",   rel:"Православие",            ci:"Белград, Нови-Сад, Ниш",     facts:["Белград — один из старейших городов Европы","Родина Николы Тесла","Страна расположена на перекрёстке балканских путей"],known:"Никола Тесла, сливовица, Белградская крепость"},
+  {n:"Хорватия",     f:"🇭🇷", ct:"Евразия",       cap:"Загреб",        re:"Парламентская республика",     pop:"3,9 млн",   rel:"Католицизм",             ci:"Загреб, Сплит, Дубровник",   facts:["Далматинское побережье — жемчужина Адриатики","Плитвицкие озёра — объект ЮНЕСКО","Галстук изобретена хорватскими солдатами XVII века"],known:"Адриатика, Дубровник, национальные парки"},
+  {n:"Словакия",     f:"🇸🇰", ct:"Евразия",       cap:"Братислава",    re:"Парламентская республика",     pop:"5,5 млн",   rel:"Католицизм",             ci:"Братислава, Кошице",         facts:["Более 180 замков и крепостей","Высокие Татры — горнолыжный рай","Независима с 1993 года (мирный распад Чехословакии)"],known:"Горные замки, Татры, спа-курорты"},
+  {n:"Словения",     f:"🇸🇮", ct:"Евразия",       cap:"Любляна",       re:"Парламентская республика",     pop:"2,1 млн",   rel:"Католицизм",             ci:"Любляна, Марибор",           facts:["Самая зелёная страна Европы","Пещера Постойна — крупнейшая в Европе (24 км)","Первой из Югославии объявила независимость в 1991 году"],known:"Альпы, Блед, пещеры Постойна"},
+  {n:"Дания",        f:"🇩🇰", ct:"Евразия",       cap:"Копенгаген",     re:"Конституционная монархия",     pop:"5,9 млн",   rel:"Лютеранство",            ci:"Копенгаген, Орхус, Оденсе",  facts:["Родина LEGO и Ганса Христиана Андерсена","Гренландия — крупнейший остров мира — территория Дании","Один из высших ВВП на душу в мире"],known:"LEGO, Андерсен, Копенгаген, викинги"},
+  {n:"Ирландия",     f:"🇮🇪", ct:"Евразия",       cap:"Дублин",        re:"Парламентская республика",     pop:"5,1 млн",   rel:"Католицизм",             ci:"Дублин, Корк, Голуэй",       facts:["«Изумрудный остров» за вечнозелёные пейзажи","Родина Оскара Уайльда и U2","Великий голод 1845–52 вдвое сократил население"],known:"Зелёные холмы, Guinness, ирландская музыка"},
+  {n:"Беларусь",     f:"🇧🇾", ct:"Евразия",       cap:"Минск",         re:"Президентская республика",     pop:"9,4 млн",   rel:"Православие",            ci:"Минск, Гомель, Витебск",     facts:["Беловежская пуща — крупнейший первобытный лес Европы","В Беловежской пуще в 1991 году был подписан акт о роспуске СССР","Крупнейший производитель калийных удобрений в мире"],known:"Беловежская пуща, зубры, Мирский замок"},
+  {n:"Молдова",      f:"🇲🇩", ct:"Евразия",       cap:"Кишинёв",       re:"Парламентская республика",     pop:"2,6 млн",   rel:"Православие",            ci:"Кишинёв, Тирасполь, Бельцы", facts:["Один из крупнейших производителей вина в Европе","Непризнанное Приднестровье занимает восток страны","Самая маленькая и самая бедная страна Европы"],known:"Вино, погреба Криково, Приднестровье"},
+  {n:"Литва",        f:"🇱🇹", ct:"Евразия",       cap:"Вильнюс",       re:"Парламентская республика",     pop:"2,8 млн",   rel:"Католицизм",             ci:"Вильнюс, Каунас, Клайпеда",  facts:["Вильнюс — один из крупнейших барочных городов мира","Первой из советских республик провозгласила независимость","Куршская коса — уникальный песчаный полуостров ЮНЕСКО"],known:"Барочный Вильнюс, Куршская коса, янтарь"},
+  {n:"Латвия",       f:"🇱🇻", ct:"Евразия",       cap:"Рига",          re:"Парламентская республика",     pop:"1,8 млн",   rel:"Лютеранство",            ci:"Рига, Даугавпилс, Лиепая",   facts:["Рига — крупнейший город Прибалтики","Старый город Риги — объект ЮНЕСКО","Янтарный берег Балтийского моря"],known:"Рига, янтарь, Певческий праздник"},
+  {n:"Эстония",      f:"🇪🇪", ct:"Евразия",       cap:"Таллин",        re:"Парламентская республика",     pop:"1,4 млн",   rel:"Лютеранство",            ci:"Таллин, Тарту, Нарва",       facts:["Самая цифровая страна мира (e-Residency)","Родина Skype","Средневековый Таллин — объект ЮНЕСКО"],known:"Цифровое государство, Tallinn, Skype"},
+  {n:"Албания",      f:"🇦🇱", ct:"Евразия",       cap:"Тирана",        re:"Парламентская республика",     pop:"2,8 млн",   rel:"Ислам",                  ci:"Тирана, Дуррес, Шкодер",     facts:["Горный рельеф занимает 70% территории","Ривьера Ионического моря — нетронутые пляжи","Единственная страна Европы с мусульманским большинством"],known:"Ривьера, гора Проклетье, Скандербег"},
+  {n:"Сев. Македония",f:"🇲🇰",ct:"Евразия",      cap:"Скопье",        re:"Парламентская республика",     pop:"2,1 млн",   rel:"Православие",            ci:"Скопье, Битола, Охрид",      facts:["Охридское озеро — одно из древнейших в мире (3–5 млн лет)","Родина Александра Македонского","Мать Тереза родилась в Скопье"],known:"Охрид, Мать Тереза, Александр Македонский"},
+  {n:"Босния",       f:"🇧🇦", ct:"Евразия",       cap:"Сараево",       re:"Парламентская республика",     pop:"3,2 млн",   rel:"Ислам, православие",     ci:"Сараево, Баня-Лука, Мостар", facts:["Сараево — место убийства Франца Фердинанда (1914)","Осада Сараево 1992–96 — самая длинная в истории современных войн","Старый мост в Мостаре — шедевр XVI века"],known:"Мостар, Сараево, Балканская история"},
+  {n:"Черногория",   f:"🇲🇪", ct:"Евразия",       cap:"Подгорица",     re:"Парламентская республика",     pop:"0,6 млн",   rel:"Православие",            ci:"Подгорица, Никшич, Будва",   facts:["Котор — объект Всемирного наследия ЮНЕСКО","Одна из самых маленьких стран Европы","Независима с 2006 года (мирный референдум)"],known:"Которский залив, Будванская ривьера, горы"},
+  {n:"Исландия",     f:"🇮🇸", ct:"Евразия",       cap:"Рейкьявик",     re:"Парламентская республика",     pop:"0,37 млн",  rel:"Лютеранство",            ci:"Рейкьявик, Акюрейри",        facts:["Гейзеры, вулканы и северное сияние круглый год","Самая безопасная страна мира по многим рейтингам","Первая в мире страна с женщиной-президентом (1980)"],known:"Северное сияние, гейзеры, геотермальная энергия"},
+  // 72 — СНГ
+  {n:"Узбекистан",   f:"🇺🇿", ct:"Евразия",       cap:"Ташкент",       re:"Президентская республика",     pop:"36 млн",    rel:"Ислам",                  ci:"Ташкент, Самарканд, Бухара, Хива",facts:["Самарканд и Бухара — жемчужины Шёлкового пути","Аральское море почти исчезло за полвека","Самая населённая страна Центральной Азии"],known:"Шёлковый путь, Самарканд, плов"},
+  {n:"Азербайджан",  f:"🇦🇿", ct:"Евразия",       cap:"Баку",          re:"Президентская республика",     pop:"10,1 млн",  rel:"Ислам",                  ci:"Баку, Гянджа, Сумгайыт",     facts:["«Страна огня» — вечные газовые факелы","Баку — «Ветреный город» на берегу Каспия","Нагорный Карабах — спорная территория с Арменией"],known:"Огонь, нефть, Баку-Сити, ковры"},
+  {n:"Грузия",       f:"🇬🇪", ct:"Евразия",       cap:"Тбилиси",       re:"Парламентская республика",     pop:"3,7 млн",   rel:"Православие",            ci:"Тбилиси, Кутаиси, Батуми",   facts:["Древнейшее виноделие в мире — более 8 000 лет","Кавказские горы с крепостями-башнями","Родина Иосифа Сталина — город Гори"],known:"Вино, хинкали, хачапури, Кавказ"},
+  {n:"Армения",      f:"🇦🇲", ct:"Евразия",       cap:"Ереван",        re:"Парламентская республика",     pop:"2,9 млн",   rel:"Православие",            ci:"Ереван, Гюмри, Ванадзор",    facts:["Первое в мире христианское государство (301 г.)","Монастырь Гехард вырублен прямо в скале","Гора Арарат — национальный символ, но находится в Турции"],known:"Первое христианство, Арарат, коньяк, шахматы"},
+  {n:"Кыргызстан",   f:"🇰🇬", ct:"Евразия",       cap:"Бишкек",        re:"Парламентская республика",     pop:"7 млн",     rel:"Ислам",                  ci:"Бишкек, Ош, Джалал-Абад",   facts:["«Швейцария Центральной Азии»","Озеро Иссык-Куль — горное море на высоте 1 600 м","Кочевая культура — юрты и эпос «Манас»"],known:"Иссык-Куль, кочевники, горные хребты"},
+  {n:"Таджикистан",  f:"🇹🇯", ct:"Евразия",       cap:"Душанбе",       re:"Президентская республика",     pop:"10 млн",    rel:"Ислам",                  ci:"Душанбе, Худжанд, Куляб",    facts:["93% территории занимают горы","Памир — «Крыша мира» (до 7 495 м)","Одна из беднейших стран СНГ"],known:"Памир, горы, шёлковый путь"},
+  {n:"Туркменистан", f:"🇹🇲", ct:"Евразия",       cap:"Ашхабад",       re:"Президентская республика",     pop:"6,1 млн",   rel:"Ислам",                  ci:"Ашхабад, Туркменабад, Мары", facts:["Газовый кратер Дарваза («Врата ада») горит с 1971 года","Один из крупнейших экспортёров природного газа","Одна из наиболее закрытых стран мира"],known:"Дарваза, природный газ, белый мрамор Ашхабада"},
+  // 79 — Ближний Восток
+  {n:"Ирак",         f:"🇮🇶", ct:"Евразия",       cap:"Багдад",        re:"Парламентская республика",     pop:"43 млн",    rel:"Ислам",                  ci:"Багдад, Басра, Мосул, Эрбиль",facts:["Месопотамия — колыбель мировой цивилизации","5-е место в мире по запасам нефти","Вавилон, Ур, Ниневия — древние города"],known:"Месопотамия, нефть, Тигр и Евфрат"},
+  {n:"Сирия",        f:"🇸🇾", ct:"Евразия",       cap:"Дамаск",        re:"Президентская республика",     pop:"21 млн",    rel:"Ислам",                  ci:"Дамаск, Алеппо, Хомс, Латакия",facts:["Дамаск — один из старейших непрерывно обитаемых городов","Гражданская война с 2011 года","Пальмира — руины античного торгового города"],known:"Дамаск, Пальмира, финикийское наследие"},
+  {n:"Иордания",     f:"🇯🇴", ct:"Евразия",       cap:"Амман",         re:"Конституционная монархия",     pop:"10,3 млн",  rel:"Ислам",                  ci:"Амман, Зарка, Ирбид, Акаба",  facts:["Петра — город, высеченный в розовой скале (III в. до н.э.)","Мёртвое море — самое солёное на Земле (−430 м)","Стабильная монархия в нестабильном регионе"],known:"Петра, Мёртвое море, пустыня Вади-Рам"},
+  {n:"Ливан",        f:"🇱🇧", ct:"Евразия",       cap:"Бейрут",        re:"Парламентская республика",     pop:"5,5 млн",   rel:"Христианство, ислам",    ci:"Бейрут, Триполи, Сидон",     facts:["Финикия — родина первого фонетического алфавита","Бейрут называли «Парижем Ближнего Востока»","Кедр ливанский — национальный символ страны"],known:"Бейрут, кедры, финикийское наследие"},
+  {n:"Кувейт",       f:"🇰🇼", ct:"Евразия",       cap:"Эль-Кувейт",    re:"Конституционная монархия",     pop:"4,8 млн",   rel:"Ислам",                  ci:"Эль-Кувейт, Эль-Джахра",     facts:["Пятые запасы нефти в мире","Освобождён от Ирака в 1991 году (операция «Буря в пустыне»)","Один из самых высоких ВВП на душу"],known:"Нефть, Персидский залив, ультрасовременный город"},
+  {n:"Катар",        f:"🇶🇦", ct:"Евразия",       cap:"Доха",          re:"Абсолютная монархия",          pop:"2,7 млн",   rel:"Ислам",                  ci:"Доха, Аль-Вакра",             facts:["Самый высокий ВВП на душу населения в мире","Принял чемпионат мира по футболу 2022 года","Крупнейшие запасы природного газа на планете"],known:"ЧМ-2022, природный газ, Al Jazeera"},
+  {n:"Оман",         f:"🇴🇲", ct:"Евразия",       cap:"Маскат",        re:"Абсолютная монархия",          pop:"4,5 млн",   rel:"Ислам",                  ci:"Маскат, Сохар, Салала",      facts:["«Швейцария Ближнего Востока» — нейтралитет и стабильность","Древний морской торговый путь в Индию","Фьорды полуострова Муссандам — уникальный ландшафт"],known:"Маскат, ладан, пустыня Руб-эль-Хали"},
+  {n:"Йемен",        f:"🇾🇪", ct:"Евразия",       cap:"Сана",          re:"Парламентская республика",     pop:"34 млн",    rel:"Ислам",                  ci:"Сана, Аден, Таиз, Ходейда",  facts:["Самая бедная страна Арабского мира","Гражданская война с 2015 года","Шибам — «Манхэттен пустыни», башни XIV века"],known:"Шибам, Баб-эль-Мандеб, остров Сокотра"},
+  // 87 — Азия
+  {n:"Афганистан",   f:"🇦🇫", ct:"Евразия",       cap:"Кабул",         re:"Исламский эмират",             pop:"42 млн",    rel:"Ислам",                  ci:"Кабул, Кандагар, Герат, Мазари-Шариф",facts:["«Кладбище империй»: Британия, СССР, США потерпели поражение","Гиндукуш — горы высотой до 7 700 м","Лазурит добывался здесь более 6 000 лет"],known:"Гиндукуш, Шёлковый путь, талибан"},
+  {n:"Мьянма",       f:"🇲🇲", ct:"Евразия",       cap:"Нейпьидо",      re:"Военная хунта",                pop:"54 млн",    rel:"Буддизм",                ci:"Нейпьидо, Янгон, Мандалай",  facts:["Баган — более 2 000 буддийских пагод","Более 100 этнических групп","Военный переворот в 2021 году"],known:"Пагоды Бага́на, рубины, река Иравади"},
+  {n:"Камбоджа",     f:"🇰🇭", ct:"Евразия",       cap:"Пномпень",      re:"Конституционная монархия",     pop:"17 млн",    rel:"Буддизм",                ci:"Пномпень, Сиемреап, Сиануквиль",facts:["Ангкор-Ват — крупнейший религиозный комплекс мира","Геноцид Пол Пота унёс треть населения (1975–79)","Озеро Тонлесап — крупнейшее в ЮВА"],known:"Ангкор-Ват, кхмерская цивилизация"},
+  {n:"Шри-Ланка",    f:"🇱🇰", ct:"Евразия",       cap:"Шри-Джаяварденепура-Котте",re:"Президентская республика",pop:"22 млн",  rel:"Буддизм",                ci:"Коломбо, Канди, Галле",       facts:["«Жемчужина Индийского океана»","Родина знаменитого цейлонского чая","Адам Пик — священная гора для четырёх религий"],known:"Чай, слоны, буддийские храмы, пляжи"},
+  {n:"Непал",        f:"🇳🇵", ct:"Евразия",       cap:"Катманду",      re:"Федеративная республика",      pop:"30 млн",    rel:"Индуизм, буддизм",       ci:"Катманду, Покхара, Лалитпур", facts:["8 из 10 высочайших вершин мира находятся здесь","Эверест — высшая точка планеты (8 849 м)","Единственная страна с некрямоугольным флагом"],known:"Эверест, альпинизм, буддизм, Гималаи"},
+  {n:"Монголия",     f:"🇲🇳", ct:"Евразия",       cap:"Улан-Батор",    re:"Парламентская республика",     pop:"3,4 млн",   rel:"Буддизм",                ci:"Улан-Батор, Эрдэнэт, Дархан", facts:["Самая малонаселённая страна мира по плотности","Чингисхан создал крупнейшую сухопутную империю в истории","Пустыня Гоби — третья по площади в мире"],known:"Чингисхан, юрты, степи и пустыня Гоби"},
+  {n:"Лаос",         f:"🇱🇦", ct:"Евразия",       cap:"Вьентьян",      re:"Однопартийная республика",     pop:"7,5 млн",   rel:"Буддизм",                ci:"Вьентьян, Луангпхабанг, Саваннакхет",facts:["«Страна миллиона слонов»","Самая интенсивно бомбардированная страна в истории (вьетнамская война)","Меконг протекает через всю страну"],known:"Меконг, Луангпхабанг, буддийские храмы"},
+  // 93 — Африка
+  {n:"Алжир",        f:"🇩🇿", ct:"Африка",        cap:"Алжир",         re:"Президентская республика",     pop:"46 млн",    rel:"Ислам",                  ci:"Алжир, Оран, Константина",   facts:["Крупнейшая страна Африки — 2,38 млн км²","Сахара занимает более 85% территории","Богатые запасы нефти и природного газа"],known:"Сахара, берберы, газ и нефть"},
+  {n:"Тунис",        f:"🇹🇳", ct:"Африка",        cap:"Тунис",         re:"Президентская республика",     pop:"12 млн",    rel:"Ислам",                  ci:"Тунис, Сфакс, Сус",          facts:["Карфаген — столица могущественной античной державы","Первая «арабская весна» началась здесь в 2010 году","Самая светская страна Северной Африки"],known:"Карфаген, арабская весна, пляжи Средиземноморья"},
+  {n:"Ливия",        f:"🇱🇾", ct:"Африка",        cap:"Триполи",       re:"Переходное правительство",     pop:"7,4 млн",   rel:"Ислам",                  ci:"Триполи, Бенгази, Мисрата",  facts:["90% территории — пустыня","Крупнейшие запасы нефти в Африке","Гражданская война после свержения Каддафи в 2011 году"],known:"Нефть, Каддафи, античные руины Лептис-Магна"},
+  {n:"Судан",        f:"🇸🇩", ct:"Африка",        cap:"Хартум",        re:"Переходный совет",             pop:"46 млн",    rel:"Ислам",                  ci:"Хартум, Омдурман, Порт-Судан",facts:["Больше пирамид, чем в Египте (нубийские пирамиды Мероэ)","Белый и Голубой Нил соединяются в Хартуме","Южный Судан отделился в 2011 году"],known:"Нубийские пирамиды, Нил, нефть"},
+  {n:"Сенегал",      f:"🇸🇳", ct:"Африка",        cap:"Дакар",         re:"Президентская республика",     pop:"17 млн",    rel:"Ислам",                  ci:"Дакар, Тьес, Сент-Луис",     facts:["Дакар — крупный порт и деловой центр Западной Африки","Остров Горе — главный центр работорговли в Африке","«Страна терранга»: страна гостеприимства"],known:"Дакар, ралли Дакар, борьба ламбе"},
+  {n:"Гана",         f:"🇬🇭", ct:"Африка",        cap:"Аккра",         re:"Президентская республика",     pop:"33 млн",    rel:"Христианство",           ci:"Аккра, Кумаси, Тамале",      facts:["Первая страна Африки южнее Сахары, получившая независимость (1957)","Один из крупнейших производителей какао в мире","Аккра — деловой и культурный центр Западной Африки"],known:"Какао, золото, демократия, Кваме Нкрума"},
+  {n:"Камерун",      f:"🇨🇲", ct:"Африка",        cap:"Яунде",         re:"Президентская республика",     pop:"27 млн",    rel:"Христианство, ислам",    ci:"Яунде, Дуала, Гарнуа",       facts:["«Африка в миниатюре» — все климатические зоны","Двуязычная страна: французский и английский","Гора Камерун — высочайший вулкан Западной Африки"],known:"Биоразнообразие, Гора Камерун, кофе"},
+  {n:"Эфиопия",      f:"🇪🇹", ct:"Африка",        cap:"Аддис-Абеба",   re:"Парламентская республика",     pop:"123 млн",   rel:"Христианство, ислам",    ci:"Аддис-Абеба, Дыре-Дауа, Мэкэле",facts:["Родина кофе — кофейное дерево обнаружено в провинции Кафа","Единственная страна Африки, не бывшая колонией","Одно из древнейших государств мира"],known:"Кофе, Аксумское царство, марафонцы"},
+  {n:"Танзания",     f:"🇹🇿", ct:"Африка",        cap:"Додома",        re:"Президентская республика",     pop:"65 млн",    rel:"Христианство, ислам",    ci:"Додома, Дар-эс-Салам, Занзибар, Мванза",facts:["Килиманджаро — высшая точка Африки (5 895 м)","Серенгети — крупнейшая миграция животных в мире","Занзибар — архипелаг пряностей"],known:"Килиманджаро, Серенгети, Занзибар"},
+  {n:"Мозамбик",     f:"🇲🇿", ct:"Африка",        cap:"Мапуту",        re:"Президентская республика",     pop:"33 млн",    rel:"Христианство, ислам",    ci:"Мапуту, Матола, Бейра",       facts:["Длинная береговая линия Индийского океана — 2 470 км","Коралловые рифы архипелага Базаруто","Открыты крупные запасы природного газа"],known:"Побережье Индийского океана, коралловые рифы"},
+  {n:"Мадагаскар",   f:"🇲🇬", ct:"Африка",        cap:"Антананариву",  re:"Президентская республика",     pop:"29 млн",    rel:"Христианство, анимизм",  ci:"Антананариву, Туамасина, Анцирабе",facts:["90% флоры и фауны — эндемики, нигде больше не встречаются","Лемуры — визитная карточка острова","4-й по площади остров в мире"],known:"Лемуры, баобабы, уникальная экосистема"},
+  {n:"Зимбабве",     f:"🇿🇼", ct:"Африка",        cap:"Харэ",          re:"Президентская республика",     pop:"16 млн",    rel:"Христианство",           ci:"Харэ, Булавайо, Китве",      facts:["Водопад Виктория — «Дым, который гремит» (108 м высотой)","Руины Великого Зимбабве IX века — ЮНЕСКО","Гиперинфляция в 2008 году: 500 млрд % в год"],known:"Водопад Виктория, Великое Зимбабве, сафари"},
+  // 105 — Америка
+  {n:"Куба",         f:"🇨🇺", ct:"Сев.Америка",   cap:"Гавана",        re:"Однопартийная республика",     pop:"11 млн",    rel:"Католицизм",             ci:"Гавана, Сантьяго-де-Куба, Камагуэй",facts:["Единственное социалистическое государство Западного полушария","Гавана — застывший во времени колониальный город","Ром, сигары и сальса — главные символы"],known:"Гавана, ром, сигары, революция Кастро"},
+  {n:"Эквадор",      f:"🇪🇨", ct:"Юж.Америка",   cap:"Кито",          re:"Президентская республика",     pop:"18 млн",    rel:"Католицизм",             ci:"Кито, Гуаякиль, Куэнка",     facts:["Расположен прямо на экваторе (от него и название)","Галапагосские острова — лаборатория Дарвина","Крупный экспортёр бананов, нефти и роз"],known:"Галапагосы, Дарвин, бананы, экватор"},
+  {n:"Боливия",      f:"🇧🇴", ct:"Юж.Америка",   cap:"Сукре / Ла-Пас",re:"Президентская республика",     pop:"12 млн",    rel:"Католицизм",             ci:"Ла-Пас, Санта-Крус, Кочабамба, Сукре",facts:["Самая высокогорная страна мира (средняя высота 3 400 м)","Солончак Уюни — крупнейшее «зеркало» мира (10 582 км²)","Две столицы: Сукре (конституционная) и Ла-Пас (административная)"],known:"Солончак Уюни, Альтиплано, озеро Титикака"},
+  {n:"Парагвай",     f:"🇵🇾", ct:"Юж.Америка",   cap:"Асунсьон",      re:"Президентская республика",     pop:"7,5 млн",   rel:"Католицизм",             ci:"Асунсьон, Сьюдад-дель-Эсте, Энкарнасьон",facts:["Гуарани наравне с испанским — официальный язык","Плотина Итайпу — одна из крупнейших ГЭС мира","Не имеет выхода к морю"],known:"Итайпу, гуарани, иезуитские миссии"},
+  {n:"Уругвай",      f:"🇺🇾", ct:"Юж.Америка",   cap:"Монтевидео",    re:"Президентская республика",     pop:"3,5 млн",   rel:"Католицизм",             ci:"Монтевидео, Пайсанду, Колония",facts:["Самая стабильная демократия Южной Америки","Первая страна, легализовавшая марихуану (2013)","Самый высокий ВВП на душу в Южной Америке"],known:"Демократия, мате, танго, пляж Пунта-дель-Эсте"},
+  {n:"Гватемала",    f:"🇬🇹", ct:"Сев.Америка",   cap:"Гватемала",     re:"Президентская республика",     pop:"17 млн",    rel:"Католицизм",             ci:"Гватемала, Кесальтенанго, Антигуа",facts:["Родина цивилизации майя — Тикаль","Вулкан Санта-Мария — один из самых активных","Антигуа — колониальный город ЮНЕСКО"],known:"Майя, Тикаль, вулканы, кофе"},
+  {n:"Панама",       f:"🇵🇦", ct:"Сев.Америка",   cap:"Панама",        re:"Президентская республика",     pop:"4,4 млн",   rel:"Католицизм",             ci:"Панама, Колон, Давид",        facts:["Панамский канал — важнейший торговый путь (77 км)","На стыке двух океанов и двух континентов","Один из крупнейших финансовых офшорных центров"],known:"Панамский канал, офшоры, два океана"},
+  {n:"Кот-д'Ивуар", f:"🇨🇮", ct:"Африка",        cap:"Ямусукро",      re:"Президентская республика",     pop:"27 млн",    rel:"Ислам, христианство",    ci:"Абиджан, Ямусукро, Буаке",   facts:["Крупнейший производитель какао в мире (40% мирового объёма)","Ямусукро — официальная столица, Абиджан — экономическая","Один из лидеров экономики Западной Африки"],known:"Какао, Абиджан, баскетбол, Дидье Дрогба"},
+];
+
+
+// Russia special data
+const RUSSIA_EXTRA = {
+  republics:[
+    {n:"Адыгея",       cap:"Майкоп",       pop:"510 тыс.",  rel:"Ислам, православие",         known:"Черкесская культура, Кавказ, заповедник",        ethnic:["Русские — 64%","Адыгейцы — 25%","Армяне — 4%","Другие — 7%"],           trad:["Адыгэ Хабзэ — кодекс чести и этикета","Национальные конные скачки и джигитовка","Приготовление халивы — рассольного сыра"]},
+    {n:"Башкортостан", cap:"Уфа",          pop:"4,1 млн",   rel:"Ислам, православие",         known:"Башкирский мёд, Урал, нефть, курай",             ethnic:["Русские — 36%","Башкиры — 30%","Татары — 25%","Другие — 9%"],            trad:["Сабантуй — праздник плуга и окончания сева","Кумысопитие и кочевые традиции скотоводов","Игра на курае — национальной духовой флейте"]},
+    {n:"Бурятия",      cap:"Улан-Удэ",     pop:"985 тыс.",  rel:"Буддизм, православие",       known:"Буддийские монастыри, Байкал, шаманизм",         ethnic:["Русские — 66%","Буряты — 30%","Другие — 4%"],                           trad:["Сагаалган — буддийский Новый год по лунному календарю","Ёхор — традиционный круговой танец","Шаманские обряды и поклонение духам природы"]},
+    {n:"Алтай",        cap:"Горно-Алтайск",pop:"220 тыс.",  rel:"Шаманизм, буддизм",          known:"Горы Алтая, Телецкое озеро, ЮНЕСКО",             ethnic:["Русские — 57%","Алтайцы — 34%","Казахи — 6%","Другие — 3%"],           trad:["Кай — горловое пение, нематериальное наследие","Чага-Байрам — праздник Белого месяца","Скотоводческие обряды и поклонение духу горы"]},
+    {n:"Дагестан",     cap:"Махачкала",    pop:"3,2 млн",   rel:"Ислам (суннизм)",            known:"Горные аулы, лезгинка, ювелирное искусство",     ethnic:["Аварцы — 29%","Даргинцы — 17%","Кумыки — 15%","Лезгины — 13%","Другие — 26%"],trad:["Лезгинка — зажигательный кавказский танец","Кубачинское золотое и серебряное ювелирное искусство","Праздник первой борозды — встреча весны"]},
+    {n:"Ингушетия",    cap:"Магас",        pop:"510 тыс.",  rel:"Ислам",                      known:"Средневековые башни Вовнушки, горная природа",   ethnic:["Ингуши — 94%","Чеченцы — 4%","Другие — 2%"],                           trad:["Строительство родовых сторожевых башен","Ловзар — свадебные многодневные обряды","Эздел — кодекс чести и правила поведения"]},
+    {n:"Кабардино-Балкария",cap:"Нальчик", pop:"870 тыс.",  rel:"Ислам, православие",         known:"Эльбрус, черкесская культура, курорты",          ethnic:["Кабардинцы — 57%","Русские — 22%","Балкарцы — 12%","Другие — 9%"],     trad:["Восхождение на Эльбрус — высшую точку России","Адыгэ Хабзэ — черкесский кодекс чести","Навруз — весенний праздник нового года"]},
+    {n:"Калмыкия",     cap:"Элиста",       pop:"270 тыс.",  rel:"Буддизм",                    known:"Единственный буддийский регион в Европе, степи", ethnic:["Калмыки — 57%","Русские — 30%","Другие — 13%"],                         trad:["Цаган Сар — Белый месяц, буддийский Новый год","Джангар — героический эпос кочевников","Скачки и состязания джигитовки в степи"]},
+    {n:"Карачаево-Черкесия",cap:"Черкесск",pop:"470 тыс.",  rel:"Ислам, православие",         known:"Домбай, Архыз, горы Западного Кавказа",          ethnic:["Карачаевцы — 41%","Русские — 32%","Абазины — 8%","Черкесы — 7%","Другие — 12%"],trad:["Горские игры и скачки на праздниках","Нартский эпос — предания о богатырях-нартах","Хычины — тонкие лепёшки с сыром и картофелем"]},
+    {n:"Карелия",      cap:"Петрозаводск", pop:"540 тыс.",  rel:"Православие, лютеранство",   known:"Кижи, Ладога, Онего, девственные леса",          ethnic:["Русские — 82%","Карелы — 7%","Белорусы — 4%","Другие — 7%"],           trad:["Рунопение — исполнение рун эпоса «Калевала»","Праздник Калевалы 28 февраля","Карельская баня с берёзовыми вениками на Онежском озере"]},
+    {n:"Коми",         cap:"Сыктывкар",    pop:"820 тыс.",  rel:"Православие",                known:"Девственные леса ЮНЕСКО, оленеводство, Север",   ethnic:["Русские — 65%","Коми — 23%","Украинцы — 3%","Другие — 9%"],            trad:["Луд — традиционный весенний праздник коми","Оленьи гонки на Севере — соревнования оленеводов","Ткачество и вышивка — коми народное рукоделие"]},
+    {n:"Крым",         cap:"Симферополь",  pop:"1,9 млн",   rel:"Православие, ислам",         known:"Черноморские курорты, история, виноделие",       ethnic:["Русские — 68%","Украинцы — 16%","Крымские татары — 13%","Другие — 3%"],trad:["Хыдырлез — крымскотатарский праздник весны","Сбор винограда и традиции массандровского виноделия","Крымскотатарская свадьба с многодневными торжествами"]},
+    {n:"Марий Эл",     cap:"Йошкар-Ола",  pop:"680 тыс.",  rel:"Православие, марийская вера",known:"Последний языческий народ Европы, священные рощи",ethnic:["Русские — 48%","Марийцы — 43%","Татары — 6%","Другие — 3%"],           trad:["Семык — языческий праздник поминовения предков","Кугече — марийская Пасха с обрядами в роще","Жертвоприношение в карт — священной роще"]},
+    {n:"Мордовия",     cap:"Саранск",      pop:"790 тыс.",  rel:"Православие",                known:"Мордовская вышивка, народное искусство",         ethnic:["Русские — 54%","Мордва — 40%","Татары — 5%","Другие — 1%"],            trad:["Раськень Озкс — молебен в священной дубовой роще","Мордовская вышивка — уникальные геометрические узоры","Тундонь ильтямо — проводы весны"]},
+    {n:"Татарстан",    cap:"Казань",       pop:"4,0 млн",   rel:"Ислам, православие",         known:"Казань — третья столица России, нефть, IT",      ethnic:["Татары — 53%","Русские — 40%","Чуваши — 3%","Другие — 4%"],            trad:["Сабантуй — главный татарский праздник плуга","Курбан-байрам и Ураза-байрам с большими пирами","Чак-чак, эчпочмак — традиционная татарская кухня"]},
+    {n:"Сев. Осетия",  cap:"Владикавказ",  pop:"700 тыс.",  rel:"Православие, ислам",         known:"Нартский эпос, осетинские пироги, Кавказ",       ethnic:["Осетины — 65%","Русские — 20%","Ингуши — 5%","Другие — 10%"],          trad:["Три осетинских пирога — обязательный символ стола","Уасдан — многодневные свадебные пиры и обряды","Нартские сказания — героический кавказский эпос"]},
+    {n:"Тыва",         cap:"Кызыл",        pop:"330 тыс.",  rel:"Буддизм, шаманизм",          known:"Центр Азии, горловое пение хоомей",              ethnic:["Тувинцы — 82%","Русские — 16%","Другие — 2%"],                          trad:["Хоомей — горловое пение, наследие ЮНЕСКО","Наадым — тувинские игры: скачки, борьба, стрельба","Шаманские ритуалы лечения и общения с духами"]},
+    {n:"Удмуртия",     cap:"Ижевск",       pop:"1,5 млн",   rel:"Православие",                known:"Ижевск (оружие Калашникова), Чайковский",        ethnic:["Русские — 62%","Удмурты — 28%","Татары — 6%","Другие — 4%"],           trad:["Гербер — удмуртский праздник окончания сева","Удмуртские свадебные многодневные обряды","Вышивка и народный костюм — рукоделие удмурток"]},
+    {n:"Хакасия",      cap:"Абакан",       pop:"540 тыс.",  rel:"Шаманизм, православие",      known:"Сибирская природа, древние курганы, эпос",       ethnic:["Русские — 81%","Хакасы — 12%","Другие — 7%"],                           trad:["Тун Пайрам — праздник первого айрана (кумыса)","Хакасский героический эпос «Алыптых Нымах»","Хай — хакасское горловое пение и шаманские обряды"]},
+    {n:"Чечня",        cap:"Грозный",      pop:"1,5 млн",   rel:"Ислам (суфизм)",             known:"Кавказ, башни Вайнахов, чеченский танец",        ethnic:["Чеченцы — 95%","Другие — 5%"],                                          trad:["Зикр — суфийский коллективный религиозный ритуал","Нохчалла — чеченский кодекс чести и достоинства","Зурна и барабан — народная музыка горских праздников"]},
+    {n:"Чувашия",      cap:"Чебоксары",    pop:"1,2 млн",   rel:"Православие",                known:"Хмелеводство, чувашская вышивка, Волга",         ethnic:["Чуваши — 68%","Русские — 27%","Другие — 5%"],                           trad:["Акатуй — чувашский праздник плуга и весны","Чувашская вышивка — уникальные орнаментальные узоры","Улах — традиционные молодёжные вечерние посиделки"]},
+    {n:"Якутия",       cap:"Якутск",       pop:"990 тыс.",  rel:"Православие, шаманизм",      known:"Полюс холода, алмазы, олени, якутские лошади",   ethnic:["Якуты — 49%","Русские — 38%","Украинцы — 2%","Другие — 11%"],           trad:["Ысыах — якутский Новый год в день летнего солнцестояния","Кумысопитие из священного чорона на празднике Ысыах","Якутские олимпийские игры: борьба, прыжки, гонки на оленях"]}
+  ],
+  millionCities:[
+    {n:"Москва",pop:"12,6 млн"},{n:"Санкт-Петербург",pop:"5,6 млн"},
+    {n:"Новосибирск",pop:"1,63 млн"},{n:"Екатеринбург",pop:"1,54 млн"},
+    {n:"Казань",pop:"1,31 млн"},{n:"Нижний Новгород",pop:"1,21 млн"},
+    {n:"Челябинск",pop:"1,17 млн"},{n:"Омск",pop:"1,13 млн"},
+    {n:"Самара",pop:"1,14 млн"},{n:"Уфа",pop:"1,12 млн"},
+    {n:"Ростов-на-Дону",pop:"1,13 млн"},{n:"Красноярск",pop:"1,09 млн"},
+    {n:"Воронеж",pop:"1,06 млн"},{n:"Пермь",pop:"1,04 млн"},
+    {n:"Волгоград",pop:"1,02 млн"},{n:"Краснодар",pop:"1,02 млн"}
+  ]
+};
+
+// Flag images (ISO 3166-1 alpha-2 codes for flagcdn.com)
+const FLAG_ISO = {
+  "Россия":"ru","США":"us","Китай":"cn","Индия":"in","Бразилия":"br",
+  "Германия":"de","Франция":"fr","Великобритания":"gb","Япония":"jp","Канада":"ca",
+  "Мексика":"mx","Египет":"eg","ЮАР":"za","Нигерия":"ng","Аргентина":"ar",
+  "Индонезия":"id","Пакистан":"pk","Бангладеш":"bd","Турция":"tr","Иран":"ir",
+  "Австралия":"au","Италия":"it","Испания":"es","Корея":"kr","Саудовская Аравия":"sa",
+  "Колумбия":"co","Чили":"cl","Перу":"pe","Венесуэла":"ve","Украина":"ua",
+  "Польша":"pl","Казахстан":"kz","Норвегия":"no","Швеция":"se","Финляндия":"fi",
+  "Таиланд":"th","Вьетнам":"vn","Марокко":"ma","Кения":"ke","Ангола":"ao",
+  "Израиль":"il","ОАЭ":"ae","Малайзия":"my","Филиппины":"ph","Греция":"gr",
+  "Чехия":"cz","Португалия":"pt","Новая Зеландия":"nz","Сингапур":"sg",
+  "Швейцария":"ch","Нидерланды":"nl","Бельгия":"be",
+  "Австрия":"at","Венгрия":"hu","Румыния":"ro","Болгария":"bg","Сербия":"rs",
+  "Хорватия":"hr","Словакия":"sk","Словения":"si","Дания":"dk","Ирландия":"ie",
+  "Беларусь":"by","Молдова":"md","Литва":"lt","Латвия":"lv","Эстония":"ee",
+  "Албания":"al","Сев. Македония":"mk","Босния":"ba","Черногория":"me","Исландия":"is",
+  "Узбекистан":"uz","Азербайджан":"az","Грузия":"ge","Армения":"am","Кыргызстан":"kg",
+  "Таджикистан":"tj","Туркменистан":"tm","Ирак":"iq","Сирия":"sy","Иордания":"jo",
+  "Ливан":"lb","Кувейт":"kw","Катар":"qa","Оман":"om","Йемен":"ye",
+  "Афганистан":"af","Мьянма":"mm","Камбоджа":"kh","Шри-Ланка":"lk","Непал":"np",
+  "Монголия":"mn","Лаос":"la","Алжир":"dz","Тунис":"tn","Ливия":"ly","Судан":"sd",
+  "Сенегал":"sn","Гана":"gh","Камерун":"cm","Эфиопия":"et","Танзания":"tz",
+  "Мозамбик":"mz","Мадагаскар":"mg","Зимбабве":"zw","Куба":"cu","Эквадор":"ec",
+  "Боливия":"bo","Парагвай":"py","Уругвай":"uy","Гватемала":"gt","Панама":"pa",
+  "Кот-д'Ивуар":"ci"
+};
+function flagImg(name, h=68){
+  const iso=FLAG_ISO[name];
+  if(!iso) return `<span style="font-size:${h}px;">🌍</span>`;
+  return `<img src="https://flagcdn.com/w160/${iso}.png" style="height:${h}px;width:auto;border-radius:5px;box-shadow:0 3px 10px rgba(0,0,0,.5);" onerror="this.replaceWith(document.createTextNode('🌍'))">`;
+}
+function flagImgSmall(name, h=28){
+  const iso=FLAG_ISO[name];
+  if(!iso) return "";
+  return `<img src="https://flagcdn.com/w80/${iso}.png" style="height:${h}px;width:auto;border-radius:3px;vertical-align:middle;margin-right:6px;box-shadow:0 1px 4px rgba(0,0,0,.4);" onerror="this.remove()">`;
+}
+
+// Numeric ISO-3166-1 → index in C[]
+const NISO = {
+  643:0,840:1,156:2,356:3,76:4,276:5,250:6,826:7,392:8,124:9,
+  484:10,818:11,710:12,566:13,32:14,360:15,586:16,50:17,792:18,364:19,
+  36:20,380:21,724:22,410:23,682:24,170:25,152:26,604:27,862:28,804:29,
+  616:30,398:31,578:32,752:33,246:34,764:35,704:36,504:37,404:38,24:39,
+  376:40,784:41,458:42,608:43,300:44,203:45,620:46,554:47,702:48,756:49,
+  528:50,56:51,
+  // Европа
+  40:52,348:53,642:54,100:55,688:56,191:57,703:58,705:59,208:60,372:61,
+  112:62,498:63,440:64,428:65,233:66,8:67,807:68,70:69,499:70,352:71,
+  // СНГ
+  860:72,31:73,268:74,51:75,417:76,762:77,795:78,
+  // Ближний Восток
+  368:79,760:80,400:81,422:82,414:83,634:84,512:85,887:86,
+  // Азия
+  4:87,104:88,116:89,144:90,524:91,496:92,418:93,
+  // Африка
+  12:94,788:95,434:96,729:97,686:98,288:99,120:100,231:101,834:102,508:103,450:104,716:105,
+  // Америка
+  192:106,218:107,68:108,600:109,858:110,320:111,591:112,
+  // Кот-д'Ивуар
+  384:113
+};
+
+const CONT_COLORS = {
+  "Евразия":"#7ab848","Сев.Америка":"#c88848","Юж.Америка":"#d4a830",
+  "Африка":"#d47030","Австралия":"#c84838"
+};
+
+const CONT_INFO = {
+  "Евразия":{rows:[["Страны","Россия, Китай, Индия, Германия, Япония…"],["Столицы","Москва, Пекин, Нью-Дели, Берлин, Токио"],["Население","~5,4 млрд"],["Религия","Христианство, ислам, индуизм, буддизм"],["Природа","Гималаи, Байкал, Волга, Альпы"],["Города","Шанхай, Токио, Москва, Стамбул"]]},
+  "Сев.Америка":{rows:[["Страны","США, Канада, Мексика, Куба"],["Столицы","Вашингтон, Оттава, Мехико"],["Население","~592 млн"],["Религия","Христианство"],["Природа","Кордильеры, Миссисипи, Великие озёра"],["Города","Нью-Йорк, Торонто, Лос-Анджелес"]]},
+  "Юж.Америка":{rows:[["Страны","Бразилия, Аргентина, Перу, Колумбия"],["Столицы","Бразилиа, Буэнос-Айрес, Лима"],["Население","~434 млн"],["Религия","Католицизм"],["Природа","Амазонка, Анды, пустыня Атакама"],["Города","Сан-Паулу, Рио, Сантьяго"]]},
+  "Африка":{rows:[["Страны","Нигерия, Египет, ЮАР, Кения, Марокко"],["Столицы","Абуджа, Каир, Претория, Найроби"],["Население","~1,4 млрд"],["Религия","Ислам, христианство"],["Природа","Сахара, Нил, озеро Виктория"],["Города","Каир, Лагос, Йоханнесбург"]]},
+  "Австралия":{rows:[["Страны","Австралия, Новая Зеландия"],["Столицы","Канберра, Веллингтон"],["Население","~42 млн"],["Религия","Христианство"],["Природа","Большой барьерный риф, пустыни"],["Города","Сидней, Мельбурн, Окленд"]]},
+};
+
+const WATERS = [
+  {l:"🌊 Тихий океан",    n:"Тихий океан",               rows:[["Площадь","165,2 млн км²"],["Макс. глубина","11 022 м — Марианская впадина"],["Факт","Самый большой и глубокий. Омывает Азию, Австралию, Америку."]]},
+  {l:"🌊 Атлантический",  n:"Атлантический океан",        rows:[["Площадь","106,5 млн км²"],["Макс. глубина","8 376 м — жёлоб Пуэрто-Рико"],["Факт","Второй по величине. Гольфстрим. Разделяет Европу и Америку."]]},
+  {l:"🌊 Индийский",      n:"Индийский океан",             rows:[["Площадь","70,6 млн км²"],["Макс. глубина","7 725 м — Зондский жёлоб"],["Факт","Самый тёплый. Муссоны. Омывает Африку, Азию, Австралию."]]},
+  {l:"❄️ Сев. Ледовитый", n:"Северный Ледовитый океан",   rows:[["Площадь","14,75 млн км²"],["Макс. глубина","4 665 м"],["Факт","Самый маленький. Большую часть года покрыт льдами."]]},
+  {l:"🌊 Средиземное",    n:"Средиземное море",            rows:[["Площадь","2,5 млн км²"],["Глубина","до 5 121 м"],["Факт","Разделяет Европу, Азию, Африку. Колыбель цивилизации."]]},
+  {l:"🌊 Карибское",      n:"Карибское море",              rows:[["Площадь","2,75 млн км²"],["Глубина","до 7 686 м"],["Факт","Тёплое, кораллы. У берегов Центральной Америки."]]},
+  {l:"🌊 Красное",        n:"Красное море",                rows:[["Площадь","438 тыс. км²"],["Глубина","до 3 040 м"],["Факт","Самое солёное. Между Африкой и Аравией. Суэцкий канал."]]},
+  {l:"🌊 Японское",       n:"Японское море",               rows:[["Площадь","978 тыс. км²"],["Глубина","до 3 742 м"],["Факт","Омывает Японию, Россию и Корею. Важный рыболовный район."]]},
+];
+
+const TOPICS = [
+  {k:"cap", ico:"🏛️", name:"Столицы",    q:c=>`Столица страны:\n${c.n}`,         a:c=>c.cap, pool:()=>C.map(c=>c.cap)},
+  {k:"ct",  ico:"🌍", name:"Континенты", q:c=>`На каком континенте:\n${c.n}`,     a:c=>c.ct,  pool:()=>[...new Set(C.map(c=>c.ct))]},
+  {k:"rel", ico:"✝️",  name:"Религии",    q:c=>`Основная религия:\n${c.n}`,        a:c=>c.rel, pool:()=>[...new Set(C.map(c=>c.rel))]},
+  {k:"re",  ico:"⚖️", name:"Режимы",     q:c=>`Форма правления:\n${c.n}`,         a:c=>c.re,  pool:()=>[...new Set(C.map(c=>c.re))]},
+  {k:"flag",ico:"🚩", name:"Флаги",      q:c=>`Чей это флаг?\n`,                  a:c=>c.n,   pool:()=>C.map(c=>c.n)},
+  {k:"mix", ico:"🎲", name:"Микс",       q:null,a:null,pool:null},
+];
+
+const EASY = new Set(["Россия","США","Китай","Индия","Германия","Франция","Великобритания","Япония","Бразилия","Австралия","Канада","Италия","Испания","Египет","Турция","Мексика","Аргентина"]);
+const HARD_EX = new Set(["Бангладеш","Ангола","Новая Зеландия","Бельгия","Швейцария","Нидерланды","Венесуэла","Перу","Чили","Сингапур","Чехия"]);
+
+// ═══════════════════════════════════════════════════════════ STATE
+let ST = { known:new Set(), hist:[], streak:0, lastDay:null, xp:0,
+           cFilter:"all", cQueue:[], cIdx:0, cFlipped:false, sessKnown:new Set(),
+           qTopic:"cap", qDiff:"easy", qCnt:10, qQs:[], qIdx:0, qSc:0, qAnswered:false };
+
+function save(){
+  localStorage.setItem("gp4",JSON.stringify({
+    known:[...ST.known],hist:ST.hist.slice(-30),
+    streak:ST.streak,lastDay:ST.lastDay,xp:ST.xp
+  }));
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem("gp4")||"{}");
+    ST.known=new Set(d.known||[]);ST.hist=d.hist||[];
+    ST.streak=d.streak||0;ST.lastDay=d.lastDay||null;ST.xp=d.xp||0;
+    const today=new Date().toDateString(), yest=new Date(Date.now()-864e5).toDateString();
+    if(ST.lastDay===today){}
+    else if(ST.lastDay===yest)ST.streak++;
+    else ST.streak=1;
+    ST.lastDay=today; save();
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════ NAV
+function go(s){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".nitem").forEach(x=>x.classList.remove("active"));
+  document.getElementById("s-"+s).classList.add("active");
+  document.querySelector(`[data-s="${s}"]`).classList.add("active");
+  if(s==="map"){document.getElementById("mapStreak").textContent=`🔥 ${ST.streak} дн.`;initMap();}
+  if(s==="cards")initCards();
+  if(s==="quiz"){buildTopics();updateQRec();}
+  if(s==="countries")initCountries();
+}
+document.querySelectorAll(".nitem").forEach(b=>b.addEventListener("click",()=>go(b.dataset.s)));
+
+// ═══════════════════════════════════════════════════════════ MAP
+let _map=null, _geo=null, _sel=null;
+
+function showInfo(title, rows){
+  document.getElementById("iTitle").innerHTML=title;
+  document.getElementById("iRows").innerHTML=rows.map(([l,v])=>
+    `<div class="frow"><span class="flabel">${l}</span><span class="fval">${v}</span></div>`
+  ).join("");
+  document.getElementById("icard").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function showCountry(c){
+  showInfo(`${c.f} ${c.n}`,[
+    ["🏛️ Столица",c.cap],["🌍 Континент",c.ct],["👥 Население",c.pop],
+    ["✝️ Религия",c.rel],["⚖️ Режим",c.re],["🏙️ Города",c.ci]
+  ]);
+  document.getElementById("mapHint").textContent=`${c.f} ${c.n} — нажми на другую страну`;
+}
+
+function initMap(){
+  if(_map){setTimeout(()=>_map.invalidateSize(),100);return;}
+  document.getElementById("mapLoad").style.display="none";
+  document.getElementById("mapDiv").style.display="block";
+
+  _map=L.map("mapDiv",{center:[20,15],zoom:2,minZoom:1,maxZoom:7,zoomControl:false});
+
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",{
+    attribution:'© <a href="https://carto.com">CARTO</a>',maxZoom:10
+  }).addTo(_map);
+
+  L.control.zoom({position:"bottomright"}).addTo(_map);
+
+  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    .then(r=>r.json())
+    .then(world=>{
+      const raw=topojson.feature(world,world.objects.countries);
+      // Fix antimeridian crossing (Russia etc.) — shift ring coords near their mean longitude
+      const fixRing=ring=>{
+        const mean=ring.reduce((s,c)=>s+c[0],0)/ring.length;
+        return ring.map(([lng,lat,...r])=>{
+          let x=lng;
+          while(x-mean>180)x-=360;
+          while(mean-x>180)x+=360;
+          return[x,lat,...r];
+        });
+      };
+      const fixGeom=g=>{
+        if(!g)return g;
+        if(g.type==="Polygon")return{...g,coordinates:g.coordinates.map(fixRing)};
+        if(g.type==="MultiPolygon")return{...g,coordinates:g.coordinates.map(p=>p.map(fixRing))};
+        return g;
+      };
+      const gj={...raw,features:raw.features.map(f=>({...f,geometry:fixGeom(f.geometry)}))};
+
+      addCountryLabels(gj.features);
+      _geo=L.geoJSON(gj,{
+        style:f=>styleF(f),
+        onEachFeature:(f,layer)=>{
+          const c=C[NISO[+f.id]];
+          if(c){
+            layer.on("click",()=>{
+              if(_sel)_geo.resetStyle(_sel);
+              layer.setStyle({weight:2.5,color:"#ffcc77",fillOpacity:.9});
+              layer.bringToFront();
+              _sel=layer;
+              showCountry(c);
+            });
+            layer.on("mouseover",e=>{
+              if(e.target!==_sel)e.target.setStyle({fillOpacity:.85,weight:1.5,color:"#ffee88"});
+              e.target.bringToFront();
+            });
+            layer.on("mouseout",e=>{if(e.target!==_sel)_geo.resetStyle(e.target);});
+          }
+        }
+      }).addTo(_map);
+    })
+    .catch(()=>{
+      document.getElementById("mapHint").textContent="⚠️ Нет интернета — карта недоступна";
+    });
+}
+
+function calcCentroid(f){
+  const pts=[];
+  const col=a=>{if(typeof a[0]==="number")pts.push(a);else a.forEach(col);};
+  col(f.geometry.coordinates);
+  if(!pts.length)return null;
+  return[pts.reduce((s,p)=>s+p[1],0)/pts.length, pts.reduce((s,p)=>s+p[0],0)/pts.length];
+}
+function addCountryLabels(features){
+  features.forEach(f=>{
+    const c=C[NISO[+f.id]];
+    if(!c||!f.geometry)return;
+    const pos=calcCentroid(f);
+    if(!pos)return;
+    L.marker(pos,{icon:L.divIcon({className:"",html:"",iconSize:[1,1]}),interactive:false,zIndexOffset:-1000})
+      .bindTooltip(c.n,{permanent:true,direction:"center",className:"ctry-lbl",opacity:1})
+      .addTo(_map);
+  });
+}
+
+function styleF(f){
+  const c=C[NISO[+f.id]];
+  return{
+    fillColor: c ? (CONT_COLORS[c.ct]||"#6a8898") : "#5a7888",
+    fillOpacity: c ? 0.68 : 0.28,
+    color:"#33556680",weight:0.7
+  };
+}
+
+// Continent buttons
+const cb=document.getElementById("contBtns");
+Object.entries(CONT_INFO).forEach(([name,d])=>{
+  const b=document.createElement("button");
+  b.className="rbtn";
+  b.textContent=name;
+  b.style.borderLeft=`3px solid ${CONT_COLORS[name]||"#6a8898"}`;
+  b.addEventListener("click",()=>{
+    const countries=C.filter(c=>c.ct===name);
+    const countryNames=countries.map(c=>c.n).join(", ");
+    const capitals=countries.map(c=>c.cap).join(", ");
+    const rows=[
+      ...d.rows.filter(r=>r[0]!=="Страны"&&r[0]!=="Столицы"),
+      [`🌍 Стран (${countries.length})`, countryNames],
+      [`🏛️ Столицы`, capitals]
+    ];
+    showInfo("🌍 "+name, rows);
+  });
+  cb.appendChild(b);
+});
+
+// Water buttons
+const wb=document.getElementById("waterBtns");
+WATERS.forEach(w=>{
+  const b=document.createElement("button");
+  b.className="rbtn";b.textContent=w.l;
+  b.addEventListener("click",()=>showInfo(w.l,w.rows));
+  wb.appendChild(b);
+});
+
+// ═══════════════════════════════════════════════════════════ CARDS
+const CONTS=["all",...new Set(C.map(c=>c.ct))];
+const CLABELS={all:"🌐 Все","Евразия":"Евразия","Сев.Америка":"Сев. Америка","Юж.Америка":"Юж. Америка","Африка":"Африка","Австралия":"Австралия"};
+
+function initCards(){
+  const fr=document.getElementById("cardFilters");fr.innerHTML="";
+  CONTS.forEach(ct=>{
+    const ch=document.createElement("span");
+    ch.className="chip"+(ST.cFilter===ct?" on":"");
+    if(ct!=="all")ch.style.borderLeft=`3px solid ${CONT_COLORS[ct]||"#6a8898"}`;
+    ch.textContent=CLABELS[ct]||ct;
+    ch.addEventListener("click",()=>{
+      ST.cFilter=ct;
+      fr.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+      ch.classList.add("on");
+      buildQueue();
+    });
+    fr.appendChild(ch);
+  });
+  buildQueue(); updateKnown();
+}
+
+function buildQueue(){
+  const pool=ST.cFilter==="all"?[...C]:C.filter(c=>c.ct===ST.cFilter);
+  ST.cQueue=pool.sort(()=>Math.random()-.5);
+  ST.cIdx=0;ST.sessKnown.clear();ST.cFlipped=false;
+  document.getElementById("fc").classList.remove("flip","swR","swL");
+  renderCard();
+}
+
+function renderCard(){
+  const tot=ST.cQueue.length,i=ST.cIdx;
+  if(!tot){
+    document.getElementById("cflag").textContent="❓";
+    document.getElementById("cname").textContent="Нет карточек";
+    document.getElementById("ccont").textContent="";return;
+  }
+  if(i>=tot){
+    document.getElementById("cflag").textContent="🎉";
+    document.getElementById("cname").textContent="Готово!";
+    document.getElementById("ccont").textContent=`Знаю ${ST.sessKnown.size} из ${tot}`;
+    document.getElementById("cPfill").style.width="100%";
+    document.getElementById("cPtxt").textContent=`✅ Все ${tot} карточек пройдены`;
+    ST.sessKnown.forEach(n=>ST.known.add(n));
+    ST.sessKnown.clear();ST.xp+=10;save();updateKnown();return;
+  }
+  const c=ST.cQueue[i];
+  document.getElementById("cflag").innerHTML=flagImg(c.n,68);
+  document.getElementById("cname").textContent=c.n;
+  document.getElementById("ccont").textContent=c.ct;
+  document.getElementById("cbtitle").innerHTML=flagImgSmall(c.n,26)+"<span>"+c.n+"</span>";
+  document.getElementById("cbitems").innerHTML=[
+    ["🏛️ Столица",c.cap],["👥 Население",c.pop],
+    ["✝️ Религия",c.rel],["⚖️ Режим",c.re],["🏙️ Города",c.ci]
+  ].map(([l,v])=>`<div class="cbrow"><span>${l}</span><span>${v}</span></div>`).join("");
+  const pct=Math.round(i/tot*100);
+  document.getElementById("cPfill").style.width=pct+"%";
+  document.getElementById("cPtxt").textContent=`Карточка ${i+1} из ${tot}`;
+  ST.cFlipped=false;
+  document.getElementById("fc").classList.remove("flip","swR","swL");
+}
+
+function flipCard(){
+  ST.cFlipped=!ST.cFlipped;
+  document.getElementById("fc").classList.toggle("flip",ST.cFlipped);
+}
+function markCard(yes){
+  if(ST.cIdx>=ST.cQueue.length){buildQueue();return;}
+  const fc=document.getElementById("fc");
+  fc.classList.add(yes?"swR":"swL");
+  if(yes){ST.sessKnown.add(ST.cQueue[ST.cIdx].n);ST.xp+=2;}
+  setTimeout(()=>{ST.cIdx++;renderCard();},180);
+}
+function updateKnown(){
+  const n=ST.known.size;
+  document.getElementById("knownBadge").textContent=n?`✅ ${n} изучено`:"";
+}
+
+document.getElementById("fc").addEventListener("click",flipCard);
+document.getElementById("bFlip").addEventListener("click",flipCard);
+document.getElementById("bYes").addEventListener("click",()=>markCard(true));
+document.getElementById("bNo").addEventListener("click",()=>markCard(false));
+
+let _tx=0,_ty=0;
+document.getElementById("fc").addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY;},{passive:true});
+document.getElementById("fc").addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-_tx, dy=e.changedTouches[0].clientY-_ty;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>55)markCard(dx>0);
+  else if(Math.abs(dx)<15&&Math.abs(dy)<15)flipCard();
+},{passive:true});
+
+// ═══════════════════════════════════════════════════════════ QUIZ
+let qTopic="cap",qDiff="easy",qCnt=10;
+
+function buildTopics(){
+  const g=document.getElementById("tGrid");g.innerHTML="";
+  TOPICS.forEach(t=>{
+    const d=document.createElement("div");
+    d.className="tcard"+(qTopic===t.k?" on":"");
+    d.innerHTML=`<div class="tico">${t.ico}</div><div class="tname">${t.name}</div>`;
+    d.addEventListener("click",()=>{qTopic=t.k;buildTopics();});
+    g.appendChild(d);
+  });
+}
+function syncDiff(){
+  document.querySelectorAll("#dRow .chip").forEach(c=>{
+    c.classList.toggle("on",c.dataset.d===qDiff);
+    c.onclick=()=>{qDiff=c.dataset.d;syncDiff();};
+  });
+}
+function syncCnt(){
+  document.querySelectorAll("#nRow .chip").forEach(c=>{
+    c.classList.toggle("on",+c.dataset.n===qCnt);
+    c.onclick=()=>{qCnt=+c.dataset.n;syncCnt();};
+  });
+}
+function updateQRec(){
+  const b=ST.hist.length?Math.max(...ST.hist.map(h=>h.pct)):0;
+  document.getElementById("qRecord").textContent=b?`🏆 Рекорд ${b}%`:"";
+}
+function showMenu(){
+  document.getElementById("qMenu").style.display="";
+  document.getElementById("qPlay").style.display="none";
+  buildTopics();syncDiff();syncCnt();
+}
+
+function genQs(){
+  let pool=[...C];
+  if(qDiff==="easy")pool=pool.filter(c=>EASY.has(c.n));
+  else if(qDiff==="mid")pool=pool.filter(c=>!HARD_EX.has(c.n));
+  pool=pool.sort(()=>Math.random()-.5).slice(0,qCnt);
+  const tlist=TOPICS.filter(t=>t.k!=="mix");
+  return pool.map(c=>{
+    const t=qTopic==="mix"?tlist[Math.floor(Math.random()*tlist.length)]:TOPICS.find(x=>x.k===qTopic);
+    const correct=t.a(c);
+    const wrongs=t.pool().filter(v=>v!==correct).sort(()=>Math.random()-.5).slice(0,3);
+    const opts=[correct,...wrongs].sort(()=>Math.random()-.5);
+    return{c,t,correct,opts,q:t.q(c)};
+  });
+}
+
+function startQuiz(){
+  ST.qQs=genQs();ST.qIdx=0;ST.qSc=0;ST.qAnswered=false;
+  document.getElementById("qMenu").style.display="none";
+  document.getElementById("qPlay").style.display="flex";
+  document.getElementById("qRes").classList.remove("show");
+  document.getElementById("qNxt").classList.remove("show");
+  document.querySelector(".qbox").style.display="";
+  document.getElementById("qOpts").style.display="";
+  renderQ();
+}
+function renderQ(){
+  const q=ST.qQs[ST.qIdx],tot=ST.qQs.length;
+  document.getElementById("qPtxt").textContent=`${ST.qIdx+1}/${tot}`;
+  document.getElementById("qSc").textContent=`${ST.qSc} ✅`;
+  document.getElementById("qPf").style.width=`${ST.qIdx/tot*100}%`;
+  const lines=q.q.split("\n");
+  document.getElementById("qFlag").innerHTML=flagImg(q.c.n,52);
+  document.getElementById("qTxt").textContent=lines[0];
+  document.getElementById("qBold").textContent=lines[1]||"";
+  const L2=["А","Б","В","Г"];
+  document.getElementById("qOpts").innerHTML=q.opts.map((o,i)=>
+    `<button class="opt" data-a="${o}"><span class="olet">${L2[i]}</span><span>${o}</span></button>`
+  ).join("");
+  document.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>answer(b.dataset.a,q.correct)));
+  ST.qAnswered=false;
+  document.getElementById("qNxt").classList.remove("show");
+}
+function answer(chosen,correct){
+  if(ST.qAnswered)return;ST.qAnswered=true;
+  document.querySelectorAll(".opt").forEach(b=>{
+    b.classList.add("off");
+    if(b.dataset.a===correct)b.classList.add("ok");
+    else if(b.dataset.a===chosen)b.classList.add("bad");
+  });
+  if(chosen===correct){ST.qSc++;ST.xp+=5;}
+  document.getElementById("qSc").textContent=`${ST.qSc} ✅`;
+  document.getElementById("qNxt").classList.add("show");
+}
+function nextQ(){
+  ST.qIdx++;
+  if(ST.qIdx>=ST.qQs.length)finishQ();
+  else renderQ();
+}
+function finishQ(){
+  const tot=ST.qQs.length,pct=Math.round(ST.qSc/tot*100);
+  ST.hist.push({sc:ST.qSc,total:tot,pct,date:new Date().toLocaleDateString("ru"),topic:qTopic});
+  ST.xp+=pct;save();updateQRec();
+  let emi="😕",lbl="Продолжай тренироваться!";
+  if(pct>=90){emi="🏆";lbl="Блестяще! Ты эксперт!";}
+  else if(pct>=70){emi="🎯";lbl="Отличный результат!";}
+  else if(pct>=50){emi="📚";lbl="Неплохо, продолжай!";}
+  document.getElementById("rEmi").textContent=emi;
+  document.getElementById("rSc").textContent=`${ST.qSc}/${tot} (${pct}%)`;
+  document.getElementById("rLbl").textContent=lbl;
+  // Hide question and options, show result
+  document.querySelector(".qbox").style.display="none";
+  document.getElementById("qOpts").style.display="none";
+  document.getElementById("qNxt").classList.remove("show");
+  document.getElementById("qPf").style.width="100%";
+  document.getElementById("qRes").classList.add("show");
+  document.getElementById("qRes").scrollIntoView({behavior:"smooth",block:"start"});
+}
+document.getElementById("startBtn").addEventListener("click",startQuiz);
+document.getElementById("qNxt").addEventListener("click",nextQ);
+document.getElementById("retryBtn").addEventListener("click",startQuiz);
+showMenu();
+
+// ═══════════════════════════════════════════════════════════ COUNTRIES
+const CTR_FILTERS=["all","Евразия","Сев.Америка","Юж.Америка","Африка","Австралия"];
+const CTR_LABELS={all:"🌐 Все","Евразия":"Евразия","Сев.Америка":"Сев. Америка","Юж.Америка":"Юж. Америка","Африка":"Африка","Австралия":"Австралия"};
+let ctrFilter="all", ctrSearch="", _ctrInit=false;
+
+function initCountries(){
+  if(!_ctrInit){
+    _ctrInit=true;
+    // filter chips
+    const fr=document.getElementById("ctrFilter"); fr.innerHTML="";
+    CTR_FILTERS.forEach(f=>{
+      const ch=document.createElement("span");
+      ch.className="chip"+(f==="all"?" on":"");
+      ch.textContent=CTR_LABELS[f]||f;
+      if(f!=="all")ch.style.borderLeft=`3px solid ${CONT_COLORS[f]||"#6a8898"}`;
+      ch.addEventListener("click",()=>{
+        ctrFilter=f;
+        fr.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+        ch.classList.add("on");
+        renderCountries();
+      });
+      fr.appendChild(ch);
+    });
+    // search
+    document.getElementById("csearch").addEventListener("input",e=>{
+      ctrSearch=e.target.value.trim().toLowerCase();
+      renderCountries();
+    });
+  }
+  renderCountries();
+}
+
+function renderCountries(){
+  let list=C.filter(c=>{
+    const matchF=ctrFilter==="all"||c.ct===ctrFilter;
+    const matchS=!ctrSearch||c.n.toLowerCase().includes(ctrSearch)||
+      (c.cap&&c.cap.toLowerCase().includes(ctrSearch));
+    return matchF&&matchS;
+  });
+  document.getElementById("ctrBadge").textContent=list.length;
+  document.getElementById("ctrList").innerHTML=list.map(c=>buildCtrCard(c)).join("");
+  // accordion toggle
+  document.getElementById("ctrList").querySelectorAll(".ctr-head").forEach(h=>{
+    h.addEventListener("click",()=>{
+      const card=h.closest(".ctr-card");
+      const wasOpen=card.classList.contains("open");
+      document.getElementById("ctrList").querySelectorAll(".ctr-card.open").forEach(x=>x.classList.remove("open"));
+      if(!wasOpen)card.classList.add("open");
+    });
+  });
+}
+
+function buildCtrCard(c){
+  const iso=FLAG_ISO[c.n];
+  const flagHtml=iso
+    ?`<img src="https://flagcdn.com/w80/${iso}.png" style="height:24px;width:auto;border-radius:3px;box-shadow:0 1px 4px #0006;" onerror="this.style.display='none'">`
+    :"";
+
+  // facts rows
+  let factsHtml="";
+  if(c.facts&&c.facts.length){
+    factsHtml=`<div class="ctr-sec">📌 Факты</div>`+c.facts.map(f=>`<div class="ctr-fact">${f}</div>`).join("");
+  }
+
+  const knownHtml=c.known?`<div class="ctr-sec">⭐ Чем известна</div><div class="ctr-known">${c.known}</div>`:"";
+
+  // basic info rows
+  const infoRows=[
+    ["🏛️ Столица",c.cap],["👥 Население",c.pop],
+    ["✝️ Религия",c.rel],["⚖️ Режим",c.re]
+  ].filter(r=>r[1]).map(([l,v])=>`<div class="ctr-row"><span class="ctr-rl">${l}</span><span class="ctr-rv">${v}</span></div>`).join("");
+
+  // cities
+  const cities=(c.ci||"").split(",").map(s=>s.trim()).filter(Boolean);
+  const citiesHtml=cities.length
+    ?`<div class="ctr-sec">🏙️ Города</div><div class="ctr-cities">${cities.map(ct=>`<span class="ctr-city">${ct}</span>`).join("")}</div>`:"";
+
+  // Russia special block
+  let rusHtml="";
+  if(c.n==="Россия"){
+    rusHtml=`
+    <div class="ctr-sec">🏛️ Республики в составе России</div>
+    <div class="rep-grid">${RUSSIA_EXTRA.republics.map((r,i)=>`<div class="rep-item" onclick="openRepModal(${i})"><div class="rep-name">${r.n}</div><div class="rep-cap">${r.cap}</div></div>`).join("")}</div>
+    <div class="ctr-sec">🏙️ Города-миллионники</div>
+    <div>${RUSSIA_EXTRA.millionCities.map(m=>`<div class="mil-row"><span class="mil-name">${m.n}</span><span class="mil-pop">${m.pop}</span></div>`).join("")}</div>`;
+  }
+
+  return`<div class="ctr-card">
+  <div class="ctr-head">
+    <div class="ctr-flag">${flagHtml}</div>
+    <div class="ctr-info">
+      <div class="ctr-name">${c.n}</div>
+      <div class="ctr-sub">${c.ct} · ${c.cap||""}</div>
+    </div>
+    <div class="ctr-arr">▼</div>
+  </div>
+  <div class="ctr-body">
+    ${infoRows}
+    ${factsHtml}
+    ${knownHtml}
+    ${citiesHtml}
+    ${rusHtml}
+  </div>
+</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════ REPUBLIC MODAL
+function openRepModal(idx){
+  const r=RUSSIA_EXTRA.republics[idx];
+  document.getElementById("repModalTitle").textContent=r.n;
+  document.getElementById("repModalCap").textContent="Столица: "+r.cap;
+  const ethHtml=r.ethnic.map(e=>{
+    const m=e.match(/(.+?)\s*—\s*(\d+)%/);
+    if(!m)return`<div class="eth-row"><span class="eth-label">${e}</span></div>`;
+    const pct=+m[2];
+    return`<div class="eth-row">
+      <span class="eth-label">${m[1]}</span>
+      <div class="eth-bar-wrap"><div class="eth-bar" style="width:${pct}%"></div></div>
+      <span class="eth-pct">${pct}%</span>
+    </div>`;
+  }).join("");
+  document.getElementById("repModalBody").innerHTML=`
+    <div class="rep-modal-sec">📊 Основные данные</div>
+    <div class="rep-modal-row"><span class="rep-modal-rl">👥 Население</span><span class="rep-modal-rv">${r.pop}</span></div>
+    <div class="rep-modal-row"><span class="rep-modal-rl">✝️ Религия</span><span class="rep-modal-rv">${r.rel}</span></div>
+    <div class="rep-modal-sec">🧑‍🤝‍🧑 Национальный состав</div>
+    ${ethHtml}
+    <div class="rep-modal-sec">⭐ Чем известна</div>
+    <div class="rep-modal-known">${r.known}</div>
+    <div class="rep-modal-sec">🎭 Топ-3 традиции</div>
+    ${r.trad.map(t=>`<div class="rep-trad">${t}</div>`).join("")}
+  `;
+  document.getElementById("repModalBg").classList.add("show");
+  document.body.style.overflow="hidden";
+}
+function closeRepModal(e){
+  if(e&&e.target!==document.getElementById("repModalBg")&&e.type==="click"&&e.target.closest(".rep-modal"))return;
+  document.getElementById("repModalBg").classList.remove("show");
+  document.body.style.overflow="";
+}
+
+// ═══════════════════════════════════════════════════════════ INIT
+load();
+document.getElementById("mapStreak").textContent=`🔥 ${ST.streak} дн.`;
+document.getElementById("mapDiv").style.display="none";
+setTimeout(initMap,200);
+
+// ═══════════════════════════════════════════════════════════ SERVICE WORKER
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    console.log('SW registered', reg.scope);
+  }).catch(err=>{
+    console.log('SW error', err);
+  });
+}
+</script>
+</body>
+</html>
