@@ -56,12 +56,12 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .country-hint{text-align:center;color:#2a5a70;font-size:.72rem;padding:6px 0 2px;}
 
 /* CARDS */
-.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:200px;padding:6px 0;}
-.fc{width:100%;max-width:360px;height:clamp(190px,28vh,250px);position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
-.fc.flip{transform:rotateY(180deg);}
+.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1200px;min-height:200px;padding:6px 0;overflow:visible;}
+.fc{width:100%;max-width:360px;height:clamp(190px,28vh,250px);position:relative;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1);cursor:pointer;}
+.fc.flip{transform:rotateY(180deg);-webkit-transform:rotateY(180deg);}
 .cface{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:18px;}
 .cfront{background:linear-gradient(145deg,#172e3e,#0c1c2c);border:2px solid #254560;}
-.cback{background:linear-gradient(145deg,#172e22,#0c1c14);border:2px solid #255040;transform:rotateY(180deg);justify-content:flex-start;padding-top:20px;overflow:hidden;}
+.cback{background:linear-gradient(145deg,#172e22,#0c1c14);border:2px solid #255040;transform:rotateY(180deg);-webkit-transform:rotateY(180deg);justify-content:flex-start;padding-top:20px;overflow:hidden;}
 .cflag{font-size:4rem;margin-bottom:8px;line-height:1;}
 .cname{font-size:1.5rem;font-weight:700;color:#ffcc77;text-align:center;line-height:1.2;}
 .ccont{font-size:.73rem;color:#3a6a84;margin-top:5px;}
@@ -796,18 +796,23 @@ function updateKnown(){
   document.getElementById("knownBadge").textContent=n?`✅ ${n} изучено`:"";
 }
 
-document.getElementById("fc").addEventListener("click",flipCard);
+let _tx=0,_ty=0,_touched=false;
+document.getElementById("fc").addEventListener("touchstart",e=>{
+  _tx=e.touches[0].clientX;_ty=e.touches[0].clientY;_touched=false;
+},{passive:true});
+document.getElementById("fc").addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-_tx, dy=e.changedTouches[0].clientY-_ty;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>55){_touched=true;markCard(dx>0);}
+  else if(Math.abs(dx)<20&&Math.abs(dy)<20){_touched=true;flipCard();}
+},{passive:true});
+// блокируем синтетический click после touch, чтобы не сбросить переворот
+document.getElementById("fc").addEventListener("click",e=>{
+  if(_touched){_touched=false;return;}
+  flipCard();
+});
 document.getElementById("bFlip").addEventListener("click",flipCard);
 document.getElementById("bYes").addEventListener("click",()=>markCard(true));
 document.getElementById("bNo").addEventListener("click",()=>markCard(false));
-
-let _tx=0,_ty=0;
-document.getElementById("fc").addEventListener("touchstart",e=>{_tx=e.touches[0].clientX;_ty=e.touches[0].clientY;},{passive:true});
-document.getElementById("fc").addEventListener("touchend",e=>{
-  const dx=e.changedTouches[0].clientX-_tx, dy=e.changedTouches[0].clientY-_ty;
-  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>55)markCard(dx>0);
-  else if(Math.abs(dx)<15&&Math.abs(dy)<15)flipCard();
-},{passive:true});
 
 // ═══════════════════════════════════════════════════════════ QUIZ
 let qTopic="cap",qDiff="easy",qCnt=10;
