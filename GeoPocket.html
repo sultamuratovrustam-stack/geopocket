@@ -35,8 +35,13 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .badge{background:linear-gradient(135deg,#e88820,#ffcc55);color:#0a141f;border-radius:16px;padding:3px 10px;font-size:.68rem;font-weight:700;}
 
 /* MAP */
-#mapDiv{height:290px;border-radius:16px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1;}
-.map-load{height:290px;background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin-bottom:10px;}
+#s-map{padding:0;display:flex;flex-direction:column;overflow:hidden;}
+.map-top{flex-shrink:0;padding:10px 13px 0;}
+.map-top .shead{margin-bottom:8px;}
+#mapDiv{flex-shrink:0;height:clamp(170px,36vh,280px);border-radius:16px;overflow:hidden;margin:0 13px 0;position:relative;z-index:1;}
+.map-load{height:clamp(170px,36vh,280px);background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin:0 13px 0;}
+.map-bottom{flex:1;overflow-y:auto;padding:8px 13px 82px;-webkit-overflow-scrolling:touch;}
+.map-bottom::-webkit-scrollbar{display:none;}
 .leaflet-container{background:#1a3a50!important;font-family:system-ui,sans-serif!important;}
 .leaflet-control-attribution{font-size:8px!important;background:rgba(0,0,0,.5)!important;color:#aaa!important;}
 .leaflet-control-attribution a{color:#8ab!important;}
@@ -52,11 +57,11 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .frow:last-child{border:none;}
 .flabel{color:#4a8aaa;font-size:.65rem;min-width:78px;flex-shrink:0;padding-top:2px;}
 .fval{font-size:.79rem;text-align:right;flex:1;line-height:1.4;}
-.country-hint{text-align:center;color:#2a5a70;font-size:.72rem;padding:10px 0 2px;}
+.country-hint{text-align:center;color:#2a5a70;font-size:.72rem;padding:6px 0 2px;}
 
 /* CARDS */
-.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:240px;padding:10px 0;}
-.fc{width:100%;max-width:360px;height:240px;position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
+.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:220px;padding:8px 0;}
+.fc{width:100%;max-width:360px;height:clamp(200px,30vh,260px);position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
 .fc.flip{transform:rotateY(180deg);}
 .cface{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:18px;}
 .cfront{background:linear-gradient(145deg,#172e3e,#0c1c2c);border:2px solid #254560;}
@@ -168,17 +173,21 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 
 <!-- MAP -->
 <div class="screen active" id="s-map">
-  <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
+  <div class="map-top">
+    <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
+  </div>
   <div id="mapLoad" class="map-load">🌍 Загрузка карты…</div>
   <div id="mapDiv"></div>
-  <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
-  <div class="stitle">Континенты</div>
-  <div class="chip-row" id="contBtns"></div>
-  <div class="stitle">Океаны и моря</div>
-  <div class="chip-row" id="waterBtns"></div>
-  <div class="icard" id="icard">
-    <div class="ititle" id="iTitle">🌐 Выбери регион</div>
-    <div id="iRows"><div class="frow"><span class="flabel">Подсказка</span><span class="fval">Тапни на страну на карте или выбери кнопку выше</span></div></div>
+  <div class="map-bottom">
+    <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
+    <div class="stitle">Континенты</div>
+    <div class="chip-row" id="contBtns"></div>
+    <div class="stitle">Океаны и моря</div>
+    <div class="chip-row" id="waterBtns"></div>
+    <div class="icard" id="icard">
+      <div class="ititle" id="iTitle">🌐 Выбери регион</div>
+      <div id="iRows"><div class="frow"><span class="flabel">Подсказка</span><span class="fval">Тапни на страну на карте или выбери кнопку выше</span></div></div>
+    </div>
   </div>
 </div>
 
