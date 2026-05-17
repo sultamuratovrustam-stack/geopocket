@@ -36,13 +36,8 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .badge{background:linear-gradient(135deg,#e88820,#ffcc55);color:#0a141f;border-radius:16px;padding:3px 10px;font-size:.68rem;font-weight:700;}
 
 /* MAP */
-#s-map{padding:0;overflow:hidden;}
-.map-top{flex-shrink:0;padding:max(env(safe-area-inset-top),14px) 13px 0;}
-.map-top .shead{margin-bottom:8px;}
-#mapDiv{flex-shrink:0;height:clamp(170px,35vh,270px);border-radius:16px;overflow:hidden;margin:0 13px;position:relative;z-index:1;}
-.map-load{flex-shrink:0;height:clamp(170px,35vh,270px);background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin:0 13px;}
-.map-bottom{flex:1;overflow-y:auto;padding:8px 13px calc(72px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;}
-.map-bottom::-webkit-scrollbar{display:none;}
+#mapDiv{height:clamp(160px,33vh,240px);border-radius:16px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1;}
+.map-load{height:clamp(160px,33vh,240px);background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin-bottom:10px;}
 .leaflet-container{background:#1a3a50!important;font-family:system-ui,sans-serif!important;}
 .leaflet-control-attribution{font-size:8px!important;background:rgba(0,0,0,.5)!important;color:#aaa!important;}
 .leaflet-control-attribution a{color:#8ab!important;}
@@ -174,21 +169,17 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 
 <!-- MAP -->
 <div class="screen active" id="s-map">
-  <div class="map-top">
-    <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
-  </div>
+  <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
   <div id="mapLoad" class="map-load">🌍 Загрузка карты…</div>
-  <div id="mapDiv" style="display:none;"></div>
-  <div class="map-bottom">
-    <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
-    <div class="stitle">Континенты</div>
-    <div class="chip-row" id="contBtns"></div>
-    <div class="stitle">Океаны и моря</div>
-    <div class="chip-row" id="waterBtns"></div>
-    <div class="icard" id="icard">
-      <div class="ititle" id="iTitle">🌐 Выбери регион</div>
-      <div id="iRows"><div class="frow"><span class="flabel">Подсказка</span><span class="fval">Тапни на страну на карте или выбери кнопку выше</span></div></div>
-    </div>
+  <div id="mapDiv"></div>
+  <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
+  <div class="stitle">Континенты</div>
+  <div class="chip-row" id="contBtns"></div>
+  <div class="stitle">Океаны и моря</div>
+  <div class="chip-row" id="waterBtns"></div>
+  <div class="icard" id="icard">
+    <div class="ititle" id="iTitle">🌐 Выбери регион</div>
+    <div id="iRows"><div class="frow"><span class="flabel">Подсказка</span><span class="fval">Тапни на страну на карте или выбери кнопку выше</span></div></div>
   </div>
 </div>
 
