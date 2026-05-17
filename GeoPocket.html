@@ -15,7 +15,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
 body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#eef4ff;height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
-.screen{display:none;flex:1;overflow-y:auto;padding:14px 13px 82px;flex-direction:column;}
+.screen{display:none;flex:1;overflow-y:auto;flex-direction:column;
+  padding:max(env(safe-area-inset-top),14px) 13px calc(72px + env(safe-area-inset-bottom));}
 .screen.active{display:flex;animation:fadeUp .2s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .bnav{position:fixed;bottom:0;left:0;right:0;background:#090f18;border-top:1px solid #182838;display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
@@ -35,12 +36,12 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .badge{background:linear-gradient(135deg,#e88820,#ffcc55);color:#0a141f;border-radius:16px;padding:3px 10px;font-size:.68rem;font-weight:700;}
 
 /* MAP */
-#s-map{padding:0;display:flex;flex-direction:column;overflow:hidden;}
-.map-top{flex-shrink:0;padding:10px 13px 0;}
+#s-map{padding:0;overflow:hidden;}
+.map-top{flex-shrink:0;padding:max(env(safe-area-inset-top),14px) 13px 0;}
 .map-top .shead{margin-bottom:8px;}
-#mapDiv{flex-shrink:0;height:clamp(170px,36vh,280px);border-radius:16px;overflow:hidden;margin:0 13px 0;position:relative;z-index:1;}
-.map-load{height:clamp(170px,36vh,280px);background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin:0 13px 0;}
-.map-bottom{flex:1;overflow-y:auto;padding:8px 13px 82px;-webkit-overflow-scrolling:touch;}
+#mapDiv{flex-shrink:0;height:clamp(170px,35vh,270px);border-radius:16px;overflow:hidden;margin:0 13px;position:relative;z-index:1;}
+.map-load{flex-shrink:0;height:clamp(170px,35vh,270px);background:#0e1e2c;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#3a6a84;font-size:.85rem;margin:0 13px;}
+.map-bottom{flex:1;overflow-y:auto;padding:8px 13px calc(72px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;}
 .map-bottom::-webkit-scrollbar{display:none;}
 .leaflet-container{background:#1a3a50!important;font-family:system-ui,sans-serif!important;}
 .leaflet-control-attribution{font-size:8px!important;background:rgba(0,0,0,.5)!important;color:#aaa!important;}
@@ -60,8 +61,8 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
 .country-hint{text-align:center;color:#2a5a70;font-size:.72rem;padding:6px 0 2px;}
 
 /* CARDS */
-.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:220px;padding:8px 0;}
-.fc{width:100%;max-width:360px;height:clamp(200px,30vh,260px);position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
+.fc-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1000px;min-height:200px;padding:6px 0;}
+.fc{width:100%;max-width:360px;height:clamp(190px,28vh,250px);position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.4,0,.2,1);cursor:pointer;}
 .fc.flip{transform:rotateY(180deg);}
 .cface{position:absolute;inset:0;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:18px;}
 .cfront{background:linear-gradient(145deg,#172e3e,#0c1c2c);border:2px solid #254560;}
@@ -177,7 +178,7 @@ body{background:#0a141f;font-family:system-ui,-apple-system,'Segoe UI',sans-seri
     <div class="shead"><span>🌍 Политическая карта</span><span class="badge" id="mapStreak">🔥 0 дн.</span></div>
   </div>
   <div id="mapLoad" class="map-load">🌍 Загрузка карты…</div>
-  <div id="mapDiv"></div>
+  <div id="mapDiv" style="display:none;"></div>
   <div class="map-bottom">
     <div class="country-hint" id="mapHint">Нажми на страну — появится информация</div>
     <div class="stitle">Континенты</div>
